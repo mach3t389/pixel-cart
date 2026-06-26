@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>PUNJABI SPEED</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23111'/%3E%3Crect x='2' y='2' width='8' height='8' fill='%23fff'/%3E%3Crect x='10' y='2' width='8' height='8' fill='%23F4D03F'/%3E%3Crect x='18' y='2' width='8' height='8' fill='%23fff'/%3E%3Crect x='2' y='10' width='8' height='8' fill='%23F4D03F'/%3E%3Crect x='10' y='10' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='10' width='8' height='8' fill='%23F4D03F'/%3E%3Crect x='2' y='18' width='8' height='8' fill='%23fff'/%3E%3Crect x='10' y='18' width='8' height='8' fill='%23F4D03F'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3Crect x='4' y='24' width='24' height='4' rx='2' fill='%23E74C3C'/%3E%3C/svg%3E">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; user-select:none; -webkit-user-select:none; }
 html, body { width:100%; height:100%; background:#000; overflow:hidden; font-family:"Courier New",Consolas,monospace; color:#fff; touch-action:none; }
@@ -14,7 +15,8 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 .screen { position:absolute; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; z-index:10; }
 .screen.active { display:flex; }
 #screen-track { overflow-y:auto; padding:12px 0 20px; }
-#screen-diff { background:linear-gradient(180deg,#1a1228 0%,#0d1020 100%); overflow-y:auto; justify-content:flex-start; padding:12px 0 16px; }
+#screen-diff { background:linear-gradient(180deg,#1a1228 0%,#0d1020 100%); overflow-y:auto; justify-content:flex-start; padding:0; }
+#screen-diff .params-inner { margin:auto; width:100%; display:flex; flex-direction:column; align-items:center; padding:12px 16px 16px; }
 #screen-title { background:linear-gradient(180deg,#0b1f3a 0%,#123a5e 55%,#1d6e4f 100%); }
 .logo { font-size:clamp(34px,9vw,92px); font-weight:900; letter-spacing:4px; line-height:0.95; text-shadow:4px 4px 0 #000,8px 8px 0 rgba(0,0,0,.35); }
 .logo .l1{color:#E24B4A;} .logo .l2{color:#F4D03F;}
@@ -232,6 +234,7 @@ input[type=range].pk-slider::-moz-range-thumb{width:20px;height:20px;border-radi
   </div>
 
   <div id="screen-diff" class="screen">
+  <div class="params-inner">
     <div class="select-title" data-i18n="race_params">PARAMÈTRES DE COURSE</div>
 
     <div class="params-section-label" data-i18n="set_diff">DIFFICULTÉ</div>
@@ -275,6 +278,7 @@ input[type=range].pk-slider::-moz-range-thumb{width:20px;height:20px;border-radi
       <button class="go-btn go-back" id="diff-back">◀ RETOUR</button>
       <button class="go-btn" id="diff-next">SUIVANT ▶</button>
     </div>
+  </div>
   </div>
 
   <div id="screen-track" class="screen">
