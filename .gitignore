@@ -1,0 +1,4 @@
+# Gros fichiers audio — à placer manuellement dans le dossier
+menu-music.wav
+*.wav
+*.mp3
