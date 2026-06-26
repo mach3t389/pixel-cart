@@ -150,6 +150,12 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 .diff-card.sel[data-d="1"] .diff-card-label{color:#F4D03F;}
 .diff-card.sel[data-d="2"] .diff-card-label{color:#E24B4A;}
 .diff-card-desc{font-size:clamp(9px,1.4vw,11px);color:rgba(255,255,255,.5);letter-spacing:0.5px;}
+.lap-select-row{display:flex;align-items:center;justify-content:center;gap:16px;margin:4px 0 8px;}
+.lap-select-label{font-size:clamp(11px,1.8vw,14px);font-weight:bold;letter-spacing:2px;color:rgba(255,255,255,.7);}
+.lap-btns{display:flex;gap:8px;}
+.lap-btn{background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.2);border-radius:12px;color:#fff;font-family:inherit;font-size:clamp(13px,2.2vw,17px);font-weight:bold;width:48px;height:40px;cursor:pointer;transition:.15s;}
+.lap-btn:hover{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.5);}
+.lap-btn.sel{background:rgba(244,208,63,.22);border-color:#F4D03F;color:#F4D03F;}
 
 /* ---- Sous-titre tagline ---- */
 .title-tagline{margin-top:12px;margin-bottom:2px;font-size:clamp(15px,3vw,26px);color:#F4D03F;letter-spacing:5px;font-weight:900;text-shadow:2px 2px 0 #000;}
@@ -203,8 +209,8 @@ input[type=range].pk-slider::-moz-range-thumb{width:20px;height:20px;border-radi
     <div class="subtitle">HOCHELAGA · KITCHENER · ÎLE NOTRE-DAME</div>
     <div class="title-nav">
       <div class="player-select-row" id="player-select-row">
-        <button class="player-btn active" id="btn-1p-title" data-players="1">👤 1 JOUEUR</button>
-        <button class="player-btn" id="btn-2p-title" data-players="2">👥 2 JOUEURS</button>
+        <button class="player-btn active" id="btn-1p-title" data-players="1" data-i18n="players_1">👤 1 JOUEUR</button>
+        <button class="player-btn" id="btn-2p-title" data-players="2" data-i18n="players_2">👥 2 JOUEURS</button>
       </div>
       <button class="nav-btn nav-play" id="title-play" data-i18n="press_play">▶ JOUER</button>
       <div class="title-nav-secondary">
@@ -241,6 +247,14 @@ input[type=range].pk-slider::-moz-range-thumb{width:20px;height:20px;border-radi
         <div class="diff-card-icon"><canvas class="diff-icon-canvas" data-icon="SKULL" width="32" height="32"></canvas></div>
         <div class="diff-card-label" data-i18n="diff_hard">DIFFICILE</div>
         <div class="diff-card-desc" data-i18n="diff_hard_desc">IA agressive · Bonne chance</div>
+      </div>
+    </div>
+    <div class="lap-select-row" id="lap-select-row">
+      <span class="lap-select-label" data-i18n="set_laps">TOURS</span>
+      <div class="lap-btns">
+        <button class="lap-btn" data-laps="1">1</button>
+        <button class="lap-btn sel" data-laps="3">3</button>
+        <button class="lap-btn" data-laps="5">5</button>
       </div>
     </div>
     <div class="screen-nav-row">
@@ -361,6 +375,7 @@ const DIFFS=[
   {key:'hard',   aiSpeed:1.05, band:1.12, itemMin:30, itemMax:80,  color:'#E24B4A'},
 ];
 let difficulty=1; // NORMAL par défaut
+let selectedLaps=3; // nombre de tours (1, 3 ou 5)
 
 /* ----- PERSISTANCE (localStorage) ----- */
 const STATS_KEY='pixelkart_stats_v1';
@@ -392,6 +407,9 @@ const STRINGS={
     st_overall:'GÉNÉRAL', st_races:'Courses', st_wins:'Victoires', st_podiums:'Podiums',
     st_winrate:'% Victoire', st_besttimes:'MEILLEURS TEMPS', st_bestlaps:'MEILLEURS TOURS',
     st_none:'—', st_nodata:'Aucune partie jouée',
+    set_laps:'TOURS',
+    r_place:'POSITION', r_time_label:'TEMPS', r_best_lap:'MEILLEUR TOUR',
+    players_1:'👤 1 JOUEUR', players_2:'👥 2 JOUEURS',
   },
   en:{
     press_play:'▶ PLAY',
@@ -410,6 +428,9 @@ const STRINGS={
     st_overall:'OVERALL', st_races:'Races', st_wins:'Wins', st_podiums:'Podiums',
     st_winrate:'Win %', st_besttimes:'BEST TIMES', st_bestlaps:'BEST LAPS',
     st_none:'—', st_nodata:'No races played',
+    set_laps:'LAPS',
+    r_place:'POSITION', r_time_label:'TIME', r_best_lap:'BEST LAP',
+    players_1:'👤 1 PLAYER', players_2:'👥 2 PLAYERS',
   },
 };
 function T(k){return(STRINGS[lang]||STRINGS.fr)[k]||(STRINGS.fr[k]||k);}
@@ -1459,6 +1480,9 @@ function initDiffSelect(){
   document.querySelectorAll('#diff-cards .diff-card').forEach(c=>{
     c.classList.toggle('sel',+c.dataset.d===difficulty);
   });
+  document.querySelectorAll('.lap-btn').forEach(b=>{
+    b.classList.toggle('sel',+b.dataset.laps===selectedLaps);
+  });
 }
 // Dessiner les icônes pixel art des cartes de difficulté au premier appel
 (function(){
@@ -1565,6 +1589,7 @@ function makeKart(ch,isPlayer,gridSlot){
 function startRace(){
   menuMusicStop();
   setupTrack(TRACKS[selectedTrackIdx]);
+  currentTrack.totalLaps=selectedLaps;
   const playerChar=CHARACTERS[selectedChar];
   const others=CHARACTERS.filter(c=>c.id!==playerChar.id);
   game.karts=[];
@@ -1827,6 +1852,9 @@ function init(){
   document.getElementById('diff-next').addEventListener('click',()=>{AUDIO.init();AUDIO.resume();goToTrackSelect();});
   document.querySelectorAll('#diff-cards .diff-card').forEach(c=>{
     c.addEventListener('click',()=>{difficulty=+c.dataset.d;initDiffSelect();AUDIO.init();AUDIO.resume();AUDIO.beep(700,.06,.12);});
+  });
+  document.querySelectorAll('.lap-btn').forEach(b=>{
+    b.addEventListener('click',()=>{selectedLaps=+b.dataset.laps;initDiffSelect();AUDIO.beep(660,.06,.1);});
   });
   document.getElementById('start-race-btn').addEventListener('click',()=>{AUDIO.init();AUDIO.resume();startRace();});
   document.getElementById('r-replay').addEventListener('click',()=>startRace());
