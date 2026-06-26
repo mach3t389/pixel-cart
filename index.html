@@ -207,7 +207,6 @@ input[type=range].pk-slider::-moz-range-thumb{width:20px;height:20px;border-radi
       <button class="diff-btn" data-d="0" data-i18n="diff_easy">FACILE</button>
       <button class="diff-btn" data-d="1" data-i18n="diff_normal">NORMAL</button>
       <button class="diff-btn" data-d="2" data-i18n="diff_hard">DIFFICILE</button>
-      <button class="diff-btn" id="btn-2p" style="border-color:rgba(255,150,255,.4);color:#f9c;">👥 1P</button>
     </div>
     <div class="track-row" id="track-row"></div>
     <button class="go-btn" id="start-race-btn" data-i18n="go">DÉPART ▶</button>
@@ -760,9 +759,11 @@ window.addEventListener('keydown',e=>{
   if(e.code==='KeyM')AUDIO.toggle();
   if((e.code==='Enter'||e.code==='Space')&&game.state===STATE.TITLE)goToSelect();
   if(game.state===STATE.SELECT){
-    if(e.code==='ArrowLeft'||e.code==='KeyA'){selectedChar=selectedChar<0?0:(selectedChar-1+CHARACTERS.length)%CHARACTERS.length;initCharSelect();AUDIO.beep(660,.06,.1);}
-    if(e.code==='ArrowRight'||e.code==='KeyD'){selectedChar=selectedChar<0?0:(selectedChar+1)%CHARACTERS.length;initCharSelect();AUDIO.beep(660,.06,.1);}
-    if((e.code==='Enter'||e.code==='Space')&&selectedChar>=0)goToTrackSelect();
+    const _cur=_selectingP===2?selectedCharP2:selectedChar;
+    const _set=v=>{if(_selectingP===2)selectedCharP2=v;else selectedChar=v;};
+    if(e.code==='ArrowLeft'||e.code==='KeyA'){_set(_cur<0?0:(_cur-1+CHARACTERS.length)%CHARACTERS.length);initCharSelect();AUDIO.beep(660,.06,.1);}
+    if(e.code==='ArrowRight'||e.code==='KeyD'){_set(_cur<0?0:(_cur+1)%CHARACTERS.length);initCharSelect();AUDIO.beep(660,.06,.1);}
+    if((e.code==='Enter'||e.code==='Space')&&_cur>=0)goToTrackSelect();
   }
   if(game.state===STATE.TRACK_SELECT){
     if(e.code==='ArrowLeft'||e.code==='KeyA'){selectedTrackIdx=selectedTrackIdx<0?0:(selectedTrackIdx-1+TRACKS.length)%TRACKS.length;initTrackSelect();AUDIO.beep(660,.06,.1);}
@@ -1277,18 +1278,34 @@ function showScreen(id){
   document.getElementById('lang-btn').style.display=inGame?'none':'';
 }
 
-let selectedChar=-1; // -1 = rien de sélectionné par défaut
+let selectedChar=-1,selectedCharP2=-1,_selectingP=1; // quel joueur choisit (1 ou 2)
 function initCharSelect(){
   const row=document.getElementById('char-row');row.innerHTML='';
+  const current=_selectingP===2?selectedCharP2:selectedChar;
+  const locked=_selectingP===2?selectedChar:-1; // P2 ne peut pas prendre le perso de P1
   CHARACTERS.forEach((ch,i)=>{
-    const card=document.createElement('div');card.className='char-card'+(i===selectedChar?' sel':'');
+    const isLocked=locked===i;
+    const card=document.createElement('div');
+    card.className='char-card'+(i===current?' sel':'')+(isLocked?' locked':'');
+    if(isLocked)card.style.opacity='0.35';
     const cv=document.createElement('canvas');cv.width=72;cv.height=72;const c=cv.getContext('2d');c.imageSmoothingEnabled=false;drawSprite(c,ch.sprite,4,4,8,kartPalette(ch));card.appendChild(cv);
     const nm=document.createElement('div');nm.className='cname';nm.textContent=ch.name;nm.style.color=ch.color;card.appendChild(nm);
     const st=document.createElement('div');st.className='char-stats';st.innerHTML=sbar("VIT",ch.notes.speed)+sbar("ACC",ch.notes.accel)+sbar("MAN",ch.notes.handling);card.appendChild(st);
-    card.addEventListener('click',()=>{selectedChar=i;initCharSelect();AUDIO.init();AUDIO.resume();AUDIO.beep(660,.06,.1);});
+    if(!isLocked){
+      card.addEventListener('click',()=>{
+        if(_selectingP===2)selectedCharP2=i;else selectedChar=i;
+        initCharSelect();AUDIO.init();AUDIO.resume();AUDIO.beep(660,.06,.1);
+      });
+    }
     row.appendChild(card);
   });
-  document.getElementById('start-sel-btn').disabled=(selectedChar<0);
+  // Titre dynamique
+  const titleEl=document.querySelector('#screen-select .select-title');
+  if(titleEl){
+    if(game.splitScreen)titleEl.textContent=(_selectingP===2?'👥 P2 — ':'👤 P1 — ')+'CHOISIS TON PILOTE';
+    else titleEl.textContent='CHOISIS TON PILOTE';
+  }
+  document.getElementById('start-sel-btn').disabled=(current<0);
 }
 function sbar(label,n){return '<div>'+label+'<span class="bar-bg"><span class="bar" style="width:'+(Math.round(n/10*48))+'px"></span></span></div>';}
 /* ----- MUSIQUE MENU ----- */
@@ -1296,7 +1313,11 @@ const _mm=()=>document.getElementById('menu-music');
 function menuMusicPlay(){const m=_mm();if(!m||m._playing)return;m.volume=0.55;m.currentTime=m.currentTime||0;m.play().catch(()=>{});m._playing=true;}
 function menuMusicStop(){const m=_mm();if(!m)return;m.pause();m._playing=false;}
 
-function goToSelect(){AUDIO.init();AUDIO.resume();menuMusicPlay();game.state=STATE.SELECT;initCharSelect();showScreen('screen-select');}
+function goToSelect(){
+  AUDIO.init();AUDIO.resume();menuMusicPlay();
+  _selectingP=1;selectedChar=-1;selectedCharP2=-1;
+  game.state=STATE.SELECT;initCharSelect();showScreen('screen-select');
+}
 
 let selectedTrackIdx=-1; // -1 = rien de sélectionné par défaut
 function initTrackSelect(){
@@ -1338,7 +1359,13 @@ function drawTrackMinimap(c,track,w,h){
   c.strokeStyle="#F4D03F";c.lineWidth=2;c.beginPath();c.moveTo(px(mini[0]),py(mini[0])-5);c.lineTo(px(mini[0]),py(mini[0])+5);c.stroke();
 }
 function buildCenterlineLight(cps,perSeg){const pts=[],n=cps.length;for(let i=0;i<n;i++){const p0=cps[(i-1+n)%n],p1=cps[i],p2=cps[(i+1)%n],p3=cps[(i+2)%n];for(let s=0;s<perSeg;s++){const t=s/perSeg,tt=t*t,ttt=tt*t;pts.push({x:0.5*((2*p1.x)+(-p0.x+p2.x)*t+(2*p0.x-5*p1.x+4*p2.x-p3.x)*tt+(-p0.x+3*p1.x-3*p2.x+p3.x)*ttt),y:0.5*((2*p1.y)+(-p0.y+p2.y)*t+(2*p0.y-5*p1.y+4*p2.y-p3.y)*tt+(-p0.y+3*p1.y-3*p2.y+p3.y)*ttt)});}}return pts;}
-function goToTrackSelect(){game.state=STATE.TRACK_SELECT;initTrackSelect();showScreen('screen-track');}
+function goToTrackSelect(){
+  // En 2P : P1 vient de valider → passer à la sélection P2
+  if(game.splitScreen&&_selectingP===1){
+    _selectingP=2;initCharSelect();return;
+  }
+  game.state=STATE.TRACK_SELECT;initTrackSelect();showScreen('screen-track');
+}
 
 function showResult(){
   game.state=STATE.RESULT;
@@ -1440,7 +1467,7 @@ function startRace(){
   game.karts=[];
   game.player=makeKart(playerChar,true,0);game.karts.push(game.player);
   if(game.splitScreen){
-    const p2Char=CHARACTERS[(selectedChar+1)%CHARACTERS.length];
+    const p2Char=CHARACTERS[selectedCharP2>=0?selectedCharP2:(selectedChar+1)%CHARACTERS.length];
     game.p2=makeKart(p2Char,false,1);game.p2.isP2=true;game.karts.push(game.p2);
     others.filter(c=>c.id!==p2Char.id).forEach((ch,i)=>game.karts.push(makeKart(ch,false,i+2)));
   }else{
@@ -1662,9 +1689,6 @@ function init(){
       const n=+b.dataset.players;
       game.splitScreen=(n===2);
       document.querySelectorAll('.player-btn').forEach(x=>x.classList.toggle('active',x===b));
-      // Sync le bouton 2P du sélecteur de piste
-      const btn2p=document.getElementById('btn-2p');
-      if(btn2p){btn2p.textContent='👥 '+(game.splitScreen?'2P':'1P');btn2p.style.borderColor=game.splitScreen?'rgba(255,150,255,.9)':'rgba(255,150,255,.4)';}
       AUDIO.init();AUDIO.resume();AUDIO.beep(n===2?800:600,.06,.10);
     });
   });
@@ -1681,16 +1705,7 @@ function init(){
   document.getElementById('p-menu').addEventListener('click',pauseToMenu);
   // Difficulté
   document.querySelectorAll('#diff-row .diff-btn').forEach(b=>{
-    if(b.id==='btn-2p'){
-      b.addEventListener('click',()=>{
-        game.splitScreen=!game.splitScreen;
-        b.textContent='👥 '+(game.splitScreen?'2P':'1P');
-        b.style.borderColor=game.splitScreen?'rgba(255,150,255,.9)':'rgba(255,150,255,.4)';
-        AUDIO.init();AUDIO.resume();AUDIO.beep(game.splitScreen?800:600,.06,.12);
-      });
-    }else{
-      b.addEventListener('click',()=>{difficulty=+b.dataset.d;initTrackSelect();AUDIO.init();AUDIO.resume();AUDIO.beep(700,.06,.12);});
-    }
+    b.addEventListener('click',()=>{difficulty=+b.dataset.d;initTrackSelect();AUDIO.init();AUDIO.resume();AUDIO.beep(700,.06,.12);});
   });
   // Statistiques (stopPropagation : éviter que le pointerdown du titre lance la sélection)
   document.getElementById('title-stats').addEventListener('pointerdown',e=>{e.stopPropagation();AUDIO.init();AUDIO.resume();goToStats();});
