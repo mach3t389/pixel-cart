@@ -257,7 +257,7 @@ input[type=range].pk-slider::-moz-range-thumb{width:20px;height:20px;border-radi
     <div class="seg" id="h-lap">LAP 1/3</div>
     <div class="seg center" id="h-time">0:00.00</div>
     <div class="seg" id="h-speed">0 km/h</div>
-    <div class="seg" id="h-item" style="display:none"></div>
+    <div class="seg" id="h-item" style="display:none"><canvas id="hud-ic" width="32" height="32" style="width:22px;height:22px;image-rendering:pixelated;image-rendering:crisp-edges;vertical-align:middle;"></canvas></div>
     <div class="seg" id="h-pos" style="flex:0 0 70px">1st</div>
   </div>
   <div id="bridge-hud">🌉 <span data-i18n="bridge">PONT</span></div>
@@ -421,86 +421,141 @@ const ITEM_INFO={
   ETOILE: {label:"ÉTOILE",  icon:"⭐", color:"#ffe566",color2:"#c8a000",projectile:false,fwd:false, speed:0,   life:0},
 };
 const ITEM_RESPAWN=600;
-// Pixel art 8×8 — 4px par pixel logique = canvas 32×32
+// Pixel art 16×16 — 2px par pixel logique = canvas 32×32
 const PIX_GRIDS={
-  // Pistolet (vue de côté, canon à droite)
+  // Pistolet — vue côté droit
   FUSIL:[
-    '........',
-    '..DDDD..',
-    '.D.D..D.',
-    'DDDDD.D.',
-    'D.....D.',
-    'DDDDDD..',
-    '..DD....',
-    '........',
+    '................',
+    '....LLLLLLLL....',
+    '...LGGGGGGGGl...',
+    '..LGGGGGGGGGl...',
+    '.LGGGGGGGGGGG...',
+    '.LGGGGGGGGGGl...',
+    '.LLLLLLLLLLl....',
+    '...LLl..........',
+    '...LdLl.........',
+    '...LLl..........',
+    '..LLLLl.........',
+    '..LGGLl.........',
+    '..LLLLl.........',
+    '...LLl..........',
+    '................',
+    '................',
   ],
-  // Couteau (lame diagonale, manche en bas-gauche)
+  // Couteau — lame + manche
   COUTEAU:[
-    '......SS',
-    '.....SS.',
-    '....SS..',
-    '...SS...',
-    '..SS....',
-    '.SSHH...',
-    '.SHH....',
-    'HH......',
+    '..............LL',
+    '.............LSlL',
+    '............LSll.',
+    '...........LSll..',
+    '..........LSll...',
+    '.........LSll....',
+    '........LSllBB...',
+    '.......LSlBBBb...',
+    '......LSlBBBb....',
+    '.....LSlBBb......',
+    '....LSlBBb.......',
+    '...LSlBb.........',
+    '..LSlBb..........',
+    '.LSlBb...........',
+    'LLBb.............',
+    '.................',
   ],
-  // Poulet (vue de face, ailes ouvertes)
+  // Poulet — vue de face
   POULET:[
-    '.WRRRW..',
-    'WWWRWWW.',
-    'WWWWWWW.',
-    'WWWWWWW.',
-    '.WWWWW..',
-    '..WOWO..',
-    '..OO....',
-    '........',
+    '....RRRR........',
+    '...RWWWWR.......',
+    '..RWWWWWWR......',
+    '.RWWWWWWWWR.....',
+    'WWWWWWWWWWWW....',
+    'WWWWWWWWWWWW....',
+    '.WWWWWWWWWW.....',
+    '..WWWWWWWW......',
+    '..WOOWOOWW......',
+    '...WOOWOW.......',
+    '....OOOO........',
+    '.....OO.........',
+    '................',
+    '................',
+    '................',
+    '................',
   ],
-  // Banane (forme courbée)
+  // Banane — forme courbée
   BANANE:[
-    '...YY...',
-    '..Y..Y..',
-    '.Y....Y.',
-    'Y......Y',
-    '.Y....Y.',
-    '..YYYY..',
-    '...YY...',
-    '........',
+    '......YYt.......',
+    '.....Y...t......',
+    '....Y.....t.....',
+    '...Y.......Y....',
+    '..Y.........Y...',
+    '.Y...........Y..',
+    '.Y............Y.',
+    '.YY..........Y..',
+    '..YYY......YY...',
+    '....YYYYYYYt....',
+    '.......ttt......',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
   ],
-  // Éclair (zigzag)
+  // Éclair — zigzag électrique
   TURBO:[
-    '...CCC..',
-    '..CCC...',
-    '.CCCCCC.',
-    '..CCCC..',
-    '.CCCCCC.',
-    '...CCC..',
-    '..CC....',
-    '........',
+    '................',
+    '.....CCCC.......',
+    '....CCCCCC......',
+    '...CCCCCwCC.....',
+    '..CCCwwwwCC.....',
+    '.CCCwwwwCCC.....',
+    'CCCwwwwCCCC.....',
+    'CCCCwwCCCC......',
+    '..CCCCCccc......',
+    '...CCCccc.......',
+    '....CCcc........',
+    '.....Cc.........',
+    '......c.........',
+    '................',
+    '................',
+    '................',
   ],
-  // Étoile à 4 branches + centre
+  // Étoile — 5 branches
   ETOILE:[
-    '...Y....',
-    '..YYY...',
-    '.YYYYY..',
-    'YYYYYYY.',
-    '.YYYYY..',
-    '..YYY...',
-    '...Y....',
-    '........',
+    '........Y.......',
+    '.......YYY......',
+    '......YYYYY.....',
+    'YYYYYYYYYYYYYYY.',
+    '.YYYYYYYYYYYYYYY',
+    '..YYYYYYYYYYY...',
+    '...YYYYY.YYYY...',
+    '..YYYY...YYYYY..',
+    '.YYYY.....YYYYY.',
+    'YYY.......YYYYYY',
+    '...........YYYY.',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
   ],
 };
-const PIX_COL={D:'#b0b8c8',S:'#e8e8f0',H:'#7a5230',W:'#f0f0f0',R:'#e03030',O:'#e07820',Y:'#F4D03F',C:'#18d8ff'};
+const PIX_COL={
+  L:'#d0d8e8',G:'#9aaabb',l:'#5a6a7a',   // gun: light/mid/dark
+  S:'#e8eaf0',s:'#b0b8c8',               // knife blade
+  B:'#9b6b3a',b:'#5a3a18',               // knife handle
+  W:'#f4f4f4',R:'#e03030',O:'#e07820',   // chicken
+  Y:'#f4d03f',t:'#7a5000',               // banana
+  C:'#18d8ff',w:'#ffffff',c:'#0090cc',   // turbo
+  d:'#40505a',                           // gun dark detail
+};
 function drawPixelIcon(canvasEl,type){
   const g=PIX_GRIDS[type];if(!g||!canvasEl)return;
-  const c=canvasEl.getContext('2d');c.clearRect(0,0,32,32);
-  const ps=4;
-  for(let r=0;r<8;r++)for(let col=0;col<8;col++){
+  const rows=g.length,cols=g[0].length;
+  const sz=canvasEl.width;
+  const ps=sz/cols;
+  const c=canvasEl.getContext('2d');c.clearRect(0,0,sz,sz);
+  for(let r=0;r<rows;r++)for(let col=0;col<cols;col++){
     const ch=g[r][col];if(ch==='.'||!PIX_COL[ch])continue;
-    // Pixel principal
     c.fillStyle=PIX_COL[ch];c.fillRect(col*ps,r*ps,ps,ps);
-    // Highlight sur le coin haut-gauche (effet de volume)
-    c.fillStyle='rgba(255,255,255,0.28)';c.fillRect(col*ps,r*ps,1,1);
   }
 }
 
@@ -1299,7 +1354,7 @@ function isGoingWrongWay(k){
   return Math.abs(angleDiff(k.angle,tangentAt(k.index)))>Math.PI*0.62; // >112°
 }
 const hLap=document.getElementById('h-lap'),hTime=document.getElementById('h-time');
-const hSpeed=document.getElementById('h-speed'),hPos=document.getElementById('h-pos'),hItem=document.getElementById('h-item');
+const hSpeed=document.getElementById('h-speed'),hPos=document.getElementById('h-pos'),hItem=document.getElementById('h-item'),hudIc=document.getElementById('hud-ic');
 const itemCorner=document.getElementById('item-corner'),icLabel=document.getElementById('ic-label');
 const bridgeHudEl=document.getElementById('bridge-hud');
 const notifEl=document.getElementById('item-notif');
@@ -1321,15 +1376,15 @@ function drawHUD(){
     const info=ITEM_INFO[p.item];
     drawPixelIcon(_icC,p.item);icLabel.textContent=info.label;
     itemCorner.classList.add('active');
-    hItem.style.display='';hItem.textContent=info.icon;hItem.style.color=info.color;
+    drawPixelIcon(hudIc,p.item);hItem.style.display='';
   }else if(p.starTime>0){
     drawPixelIcon(_icC,'ETOILE');icLabel.textContent='ÉTOILE';
     itemCorner.classList.add('active');
-    hItem.style.display='';hItem.textContent='⭐';hItem.style.color='#ffe566';
+    drawPixelIcon(hudIc,'ETOILE');hItem.style.display='';
   }else if(p.boostTime>0){
     drawPixelIcon(_icC,'TURBO');icLabel.textContent='TURBO';
     itemCorner.classList.add('active');
-    hItem.style.display='';hItem.textContent='⚡';hItem.style.color='#00ccff';
+    drawPixelIcon(hudIc,'TURBO');hItem.style.display='';
   }else{
     itemCorner.classList.remove('active');
     hItem.style.display='none';
