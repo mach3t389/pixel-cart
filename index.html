@@ -111,10 +111,10 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
   100%{box-shadow:inset 0 0 0 7px rgba(255,40,40,.85);}
 }
 /* ---- LANGUE ---- */
-#lang-btn{position:absolute;top:8px;right:10px;z-index:20;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.30);border-radius:20px;color:#fff;font-family:inherit;font-size:clamp(11px,1.8vw,14px);font-weight:bold;letter-spacing:1px;padding:4px 12px;cursor:pointer;}
-#lang-btn:hover{background:rgba(244,208,63,.25);border-color:#F4D03F;}
-#home-btn{position:absolute;top:8px;left:10px;z-index:20;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.30);border-radius:20px;color:#fff;font-family:inherit;font-size:clamp(11px,1.8vw,14px);font-weight:bold;letter-spacing:1px;padding:4px 12px;cursor:pointer;display:none;}
-#home-btn:hover{background:rgba(244,208,63,.25);border-color:#F4D03F;}
+#top-bar{position:absolute;top:8px;right:10px;z-index:20;display:flex;gap:8px;align-items:center;}
+#top-bar button{background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.30);border-radius:20px;color:#fff;font-family:inherit;font-size:clamp(11px,1.8vw,14px);font-weight:bold;letter-spacing:1px;padding:4px 12px;cursor:pointer;}
+#top-bar button:hover{background:rgba(244,208,63,.25);border-color:#F4D03F;}
+#home-btn{display:none;}
 
 /* ---- PAUSE ---- */
 #screen-pause{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.78);z-index:20;}
@@ -189,8 +189,10 @@ input[type=range].pk-slider::-moz-range-thumb{width:20px;height:20px;border-radi
 <div id="stage"><div id="frame">
   <canvas id="game-canvas" width="640" height="360"></canvas>
   <audio id="menu-music" src="menu-music.wav" loop preload="none"></audio>
-  <button id="home-btn">⌂ ACCUEIL</button>
-  <button id="lang-btn">EN</button>
+  <div id="top-bar">
+    <button id="home-btn">⌂</button>
+    <button id="lang-btn">EN</button>
+  </div>
 
   <div id="screen-title" class="screen active">
     <div class="logo"><span class="l1">PIXEL</span> <span class="l2">KART</span></div>
@@ -1330,9 +1332,9 @@ function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   if(id)document.getElementById(id).classList.add('active');
   const inGame=(game.state===STATE.RACING||game.state===STATE.COUNTDOWN||game.state===STATE.PAUSE);
+  const onTitle=(game.state===STATE.TITLE);
   document.getElementById('lang-btn').style.display=inGame?'none':'';
-  const noHome=inGame||game.state===STATE.TITLE;
-  document.getElementById('home-btn').style.display=noHome?'none':'';
+  document.getElementById('home-btn').style.display=(inGame||onTitle)?'none':'';
 }
 
 let selectedChar=-1,selectedCharP2=-1,_selectingP=1; // quel joueur choisit (1 ou 2)
