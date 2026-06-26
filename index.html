@@ -455,27 +455,32 @@ const ITEM_INFO={
   ETOILE: {label:"ÉTOILE",  icon:"⭐", color:"#ffe566",color2:"#c8a000",projectile:false,fwd:false, speed:0,   life:0},
 };
 const ITEM_RESPAWN=600;
-// Pixel art 8×8 — 4px par pixel = canvas 32×32
-const PIX_GRIDS={
-  FUSIL:  ['........','..GGGG..','GGGGGGG.','G..G....','GGGGGGG.','..GG....','..GG....','........'],
-  COUTEAU:['......GG','.....GG.','.GGGGGb.','GGGGG.b.','....GGbb','....Gbbb','....bbb.','........'],
-  POULET: ['..RR....','RWWWWR..','WWWWWWW.','WWWWWWW.','.WWWWW..','..WOWO..','..OO....','........'],
-  BANANE: ['..YYY...','YY...Y..','Y.....Y.','Y.....Y.','YY...YY.','..YYYY..','...tt...','........'],
-  TURBO:  ['....CC..','...CC...','..CCCC..','..CC....','CCCCCC..','..CC....','..C.....','........'],
-  ETOILE: ['...Y....','YYYYYYY.','YYYYYYY.','.YYYYY..','YY.Y.YY.','...Y....','...Y....','........'],
-  LEAF:   ['...N....','..NNN...','..NNN...','NNNNNNN.','NNNNNNN.','.NNNNN..','..nnn...','...n....'],
-  BOLT:   ['....BB..','...BB...','..BBBB..','.BBBBB..','..BBBB..','...BB...','....B...','........'],
-  SKULL:  ['.WWWWW..','WWWWWWW.','W.W.W.W.','WWWWWWW.','WWWWWWW.','.WXXXW..','..XXX...','........'],
-};
-const PIX_COL={G:'#c0c8d0',b:'#7a5230',R:'#e03030',W:'#f4f4f4',O:'#e07820',Y:'#f4d03f',t:'#7a5000',C:'#18d8ff',N:'#4ecb71',n:'#2a7a40',B:'#f4d03f',X:'#2a2a2a'};
+// Icônes : emoji rendu petit puis agrandi nearest-neighbor = "pixelisé"
+const DIFF_ICONS={LEAF:'🌿',BOLT:'⚡',SKULL:'💀'};
+const _emojiCache={};
+function _buildPixelEmoji(emoji,srcPx,dstPx){
+  const key=emoji+'_'+srcPx+'_'+dstPx;
+  if(_emojiCache[key])return _emojiCache[key];
+  // 1. Dessiner l'emoji à petite taille (srcPx)
+  const tmp=document.createElement('canvas');tmp.width=srcPx;tmp.height=srcPx;
+  const tc=tmp.getContext('2d');
+  tc.font=Math.round(srcPx*.85)+'px serif';tc.textBaseline='middle';tc.textAlign='center';
+  tc.fillText(emoji,srcPx/2,srcPx/2);
+  // 2. Agrandir sans antialiasing → pixels bien carrés
+  const out=document.createElement('canvas');out.width=dstPx;out.height=dstPx;
+  const oc=out.getContext('2d');oc.imageSmoothingEnabled=false;
+  oc.drawImage(tmp,0,0,dstPx,dstPx);
+  return(_emojiCache[key]=out);
+}
 function drawPixelIcon(canvasEl,type){
-  const g=PIX_GRIDS[type];if(!g||!canvasEl)return;
-  const c=canvasEl.getContext('2d');c.clearRect(0,0,32,32);
-  const ps=4;
-  for(let r=0;r<8;r++)for(let col=0;col<8;col++){
-    const ch=g[r][col];if(ch==='.'||!PIX_COL[ch])continue;
-    c.fillStyle=PIX_COL[ch];c.fillRect(col*ps,r*ps,ps,ps);
-  }
+  // type = clé ITEM_INFO (FUSIL…) ou clé DIFF_ICONS (LEAF…)
+  const emoji=(ITEM_INFO[type]?.icon)||(DIFF_ICONS[type]);
+  if(!emoji||!canvasEl)return;
+  const sz=canvasEl.width;
+  const src=Math.max(6,Math.round(sz/4)); // 4× pixel scale
+  const px=_buildPixelEmoji(emoji,src,sz);
+  const c=canvasEl.getContext('2d');c.clearRect(0,0,sz,sz);
+  c.imageSmoothingEnabled=false;c.drawImage(px,0,0);
 }
 
 /* ----- TRACKS ----- */
@@ -923,55 +928,34 @@ function drawItemBox(ctx,cx,baseY,scale,raceTime){
   }
 }
 
-// Projectile en vol — grande icône avec contour noir
+// Projectile en vol — emoji pixelisé
 function drawProjectile(ctx,cx,baseY,scale,type){
   if(scale<0.15)return;
-  const info=ITEM_INFO[type];
-  const s=Math.max(4,scale*6);
-  const bx=(cx-s)|0, by=(baseY-s*3.2)|0, bw=(s*2)|0, bh=(s*2)|0;
-  // Ombre au sol
+  const info=ITEM_INFO[type];if(!info)return;
+  const sz=Math.max(8,Math.round(scale*22));
+  const src=Math.max(4,Math.round(sz/4));
+  const px=_buildPixelEmoji(info.icon,src,sz);
+  // Ombre
   ctx.fillStyle="rgba(0,0,0,0.35)";
-  ctx.beginPath();ctx.ellipse(cx,baseY-2,s*1.1,s*0.4,0,0,Math.PI*2);ctx.fill();
-  // Corps principal
-  ctx.fillStyle=info.color2;
-  ctx.strokeStyle="#000"; ctx.lineWidth=Math.max(1,scale*1.2);
-  ctx.beginPath();ctx.roundRect(bx,by,bw,bh,Math.max(2,s*0.4));ctx.fill();ctx.stroke();
-  // Face colorée
-  ctx.fillStyle=info.color;
-  ctx.beginPath();ctx.roundRect(bx+s*0.25,by+s*0.25,s*1.5,s*1.5,Math.max(1,s*0.3));ctx.fill();
-  // Traînée lumineuse
-  ctx.fillStyle="rgba(255,240,80,0.55)";
-  ctx.fillRect((cx-s*0.4)|0,(by+bh)|0,(s*0.8)|0,(s*0.9)|0);
+  ctx.beginPath();ctx.ellipse(cx,baseY-1,sz*0.5,sz*0.18,0,0,Math.PI*2);ctx.fill();
+  // Icône
+  ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(px,(cx-sz/2)|0,(baseY-sz*1.9)|0,sz,sz);
+  ctx.imageSmoothingEnabled=true;
 }
 
 // Banane posée au sol — bien visible avec contour
+// Banane posée au sol — même style emoji pixelisé
 function drawBanana(ctx,cx,baseY,scale){
   if(scale<0.15)return;
-  const s=Math.max(2,scale*4.5);
-  // Ombre elliptique
-  ctx.fillStyle="rgba(0,0,0,0.40)";
-  ctx.beginPath();ctx.ellipse(cx,baseY-1,s*1.3,s*0.5,0,0,Math.PI*2);ctx.fill();
-  // Corps de la banane (courbé : arc haut + arc bas)
-  ctx.lineWidth=Math.max(2,s*0.9);
-  ctx.lineCap="round";
-  // Contour noir pour visibilité
-  ctx.strokeStyle="#222";
-  ctx.lineWidth=Math.max(3,s*1.3);
-  ctx.beginPath();
-  ctx.moveTo(cx-s,baseY-s*0.4);
-  ctx.bezierCurveTo(cx-s*0.5,baseY-s*2.0, cx+s*0.5,baseY-s*2.0, cx+s,baseY-s*0.4);
-  ctx.stroke();
-  // Jaune
-  ctx.strokeStyle="#F4D03F";
-  ctx.lineWidth=Math.max(2,s*0.9);
-  ctx.beginPath();
-  ctx.moveTo(cx-s,baseY-s*0.4);
-  ctx.bezierCurveTo(cx-s*0.5,baseY-s*2.0, cx+s*0.5,baseY-s*2.0, cx+s,baseY-s*0.4);
-  ctx.stroke();
-  // Pointes marron
-  ctx.fillStyle="#7a5000";
-  ctx.beginPath();ctx.arc(cx-s,baseY-s*0.4,Math.max(1,s*0.35),0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.arc(cx+s,baseY-s*0.4,Math.max(1,s*0.35),0,Math.PI*2);ctx.fill();
+  const sz=Math.max(8,Math.round(scale*18));
+  const src=Math.max(4,Math.round(sz/4));
+  const px=_buildPixelEmoji('🍌',src,sz);
+  ctx.fillStyle="rgba(0,0,0,0.35)";
+  ctx.beginPath();ctx.ellipse(cx,baseY-1,sz*0.5,sz*0.18,0,0,Math.PI*2);ctx.fill();
+  ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(px,(cx-sz/2)|0,(baseY-sz*1.8)|0,sz,sz);
+  ctx.imageSmoothingEnabled=true;
 }
 
 /* ----- MODE7 ----- */
@@ -1643,7 +1627,17 @@ function drawSplitHUD(kart,vpY0,vpH,label){
   ctx.fillText(formatTime(game.raceTime),RENDER_W/2,vpY0+4);
   ctx.fillStyle='#9fd0ff';ctx.textAlign='right';
   ctx.fillText(Math.round((kart.speed/kart.char.stats.topSpeed)*180)+' km/h',RENDER_W-5,vpY0+4);
-  if(kart.item){ctx.fillStyle=ITEM_INFO[kart.item].color;ctx.textAlign='left';ctx.fillText(kart.item,90,vpY0+4);}
+  if(kart.item){
+    // Icône pixelisée de l'item dans le HUD split
+    const _info=ITEM_INFO[kart.item];
+    if(_info){
+      const _sz=16,_src=Math.max(4,Math.round(_sz/4));
+      const _px=_buildPixelEmoji(_info.icon,_src,_sz);
+      ctx.imageSmoothingEnabled=false;
+      ctx.drawImage(_px,5,vpY0+2,_sz,_sz);
+      ctx.imageSmoothingEnabled=true;
+    }
+  }
   // Wrong-way
   if(game.state===STATE.RACING&&isGoingWrongWay(kart)){
     ctx.font='bold 13px "Courier New"';ctx.textAlign='center';
