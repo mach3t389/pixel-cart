@@ -69,6 +69,8 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 #wrong-way{position:absolute;top:18%;left:50%;transform:translateX(-50%);display:none;background:rgba(220,30,30,.88);color:#fff;font-size:clamp(16px,4.5vw,36px);font-weight:900;letter-spacing:2px;padding:6px 24px;border-radius:12px;border:3px solid #fff;z-index:9;pointer-events:none;animation:wrongway-blink .5s steps(2,start) infinite;}
 #wrong-way.active{display:block;}
 @keyframes wrongway-blink{50%{opacity:0.3}}
+#rear-warn{position:absolute;bottom:22%;left:50%;transform:translateX(-50%);display:none;background:rgba(220,80,0,.92);color:#fff;font-size:clamp(12px,3vw,22px);font-weight:900;letter-spacing:2px;padding:4px 18px;border-radius:10px;border:2px solid #ffcc00;z-index:9;pointer-events:none;animation:wrongway-blink .35s steps(2,start) infinite;}
+#rear-warn.active{display:block;}
 
 #countdown{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:9;pointer-events:none;}
 #countdown.active{display:flex;}
@@ -330,6 +332,7 @@ input[type=range].pk-slider::-moz-range-thumb{width:20px;height:20px;border-radi
   <div id="bridge-hud">🌉 <span data-i18n="bridge">PONT</span></div>
   <div id="item-notif"></div>
   <div id="wrong-way" data-i18n="wrong_way">⚠ MAUVAIS SENS !</div>
+  <div id="rear-warn" data-i18n="rear_warn">⚠ DERRIÈRE !</div>
 
   <div id="countdown"><span id="cd-num">3</span></div>
 
@@ -426,6 +429,7 @@ const STRINGS={
     st_overall:'GÉNÉRAL', st_races:'Courses', st_wins:'Victoires', st_podiums:'Podiums',
     st_winrate:'% Victoire', st_besttimes:'MEILLEURS TEMPS', st_bestlaps:'MEILLEURS TOURS',
     st_none:'—', st_nodata:'Aucune partie jouée',
+    rear_warn:'⚠ DERRIÈRE !',
     set_laps:'TOURS', set_cc:'CC', set_diff:'DIFFICULTÉ',
     race_params:'PARAMÈTRES DE COURSE',
     choose_diff:'CHOISIS LA DIFFICULTÉ',
@@ -449,6 +453,7 @@ const STRINGS={
     st_overall:'OVERALL', st_races:'Races', st_wins:'Wins', st_podiums:'Podiums',
     st_winrate:'Win %', st_besttimes:'BEST TIMES', st_bestlaps:'BEST LAPS',
     st_none:'—', st_nodata:'No races played',
+    rear_warn:'⚠ BEHIND !',
     set_laps:'LAPS', set_cc:'CC', set_diff:'DIFFICULTY',
     race_params:'RACE SETTINGS',
     choose_diff:'CHOOSE DIFFICULTY',
@@ -1233,23 +1238,64 @@ function useItem(k){
 function updateProjectiles(dt){
   for(let i=game.projectiles.length-1;i>=0;i--){
     const p=game.projectiles[i];
+
+    // Homing du poulet : cherche le kart ennemi le plus proche devant lui
+    if(p.type==='POULET'){
+      let bestTarget=null, bestScore=-Infinity;
+      for(const k of game.karts){
+        if(k.char.id===p.ownerId||k.stunTime>0)continue;
+        const dx=k.x-p.x, dy=k.y-p.y;
+        const dist=Math.hypot(dx,dy);
+        if(dist>200)continue; // rayon de détection
+        const angleToK=Math.atan2(dy,dx);
+        const angleDiff=Math.abs(((angleToK-p.angle)+Math.PI*3)%(Math.PI*2)-Math.PI);
+        if(angleDiff>Math.PI*0.75)continue; // ignore si derrière
+        const score=1/dist - angleDiff*0.3;
+        if(score>bestScore){bestScore=score;bestTarget=k;}
+      }
+      if(bestTarget){
+        const desired=Math.atan2(bestTarget.y-p.y,bestTarget.x-p.x);
+        let diff=((desired-p.angle)+Math.PI*3)%(Math.PI*2)-Math.PI;
+        p.angle+=Math.sign(diff)*Math.min(Math.abs(diff),0.06*dt); // virage progressif
+      }
+    }
+
     p.x+=Math.cos(p.angle)*p.speed*dt*.5;
     p.y+=Math.sin(p.angle)*p.speed*dt*.5;
     p.life-=dt;
+
     // Rebond du poulet hors-piste
     if(p.bounceCount>0){
       const near=nearestCenter(p.x,p.y);
       if(!isOnTrack(near.dist)){p.angle+=Math.PI*.4;p.bounceCount--;AUDIO.beep(330,.05,.08,p.x,p.y);}
     }
-    // Collision avec les karts
+
     let hit=false;
-    for(const k of game.karts){
-      if(k.char.id===p.ownerId)continue;
-      if(Math.hypot(k.x-p.x,k.y-p.y)<16){
-        stunKart(k,p.type);
-        hit=true; break;
+
+    // Poulet détruit par une banane sur sa trajectoire
+    if(p.type==='POULET'){
+      for(let j=game.droppedItems.length-1;j>=0;j--){
+        const d=game.droppedItems[j];
+        if(d.type!=='BANANE')continue;
+        if(Math.hypot(p.x-d.x,p.y-d.y)<14){
+          game.droppedItems.splice(j,1);
+          AUDIO.beep(220,.12,.15,d.x,d.y);
+          hit=true; break;
+        }
       }
     }
+
+    // Collision avec les karts
+    if(!hit){
+      for(const k of game.karts){
+        if(k.char.id===p.ownerId)continue;
+        if(Math.hypot(k.x-p.x,k.y-p.y)<16){
+          stunKart(k,p.type);
+          hit=true; break;
+        }
+      }
+    }
+
     if(p.life<=0||hit)game.projectiles.splice(i,1);
   }
 }
@@ -1342,6 +1388,37 @@ function resolveKartCollisions(){
 /* ----- HUD ----- */
 const hudEl=document.getElementById('hud');
 const wrongWayEl=document.getElementById('wrong-way');
+const rearWarnEl=document.getElementById('rear-warn');
+let _rearWarnBeepT=0;
+
+function checkRearDanger(player){
+  // Détecte projectiles et karts qui approchent par derrière
+  const REAR_DIST=90, REAR_ANGLE=Math.PI*0.65;
+  let danger=false;
+  const behindAngle=player.angle+Math.PI;
+  for(const p of game.projectiles){
+    if(p.ownerId===player.char.id)continue;
+    const dx=p.x-player.x,dy=p.y-player.y,d=Math.hypot(dx,dy);
+    if(d>REAR_DIST)continue;
+    const a=Math.atan2(dy,dx);
+    if(Math.abs(((a-behindAngle)+Math.PI*3)%(Math.PI*2)-Math.PI)<REAR_ANGLE){danger=true;break;}
+  }
+  if(!danger){
+    for(const k of game.karts){
+      if(k===player||k.stunTime>0)continue;
+      const dx=k.x-player.x,dy=k.y-player.y,d=Math.hypot(dx,dy);
+      if(d>55||d<8)continue; // trop loin ou trop proche (déjà à côté)
+      const a=Math.atan2(dy,dx);
+      if(Math.abs(((a-behindAngle)+Math.PI*3)%(Math.PI*2)-Math.PI)<REAR_ANGLE&&k.speed>player.speed*0.6){danger=true;break;}
+    }
+  }
+  rearWarnEl.classList.toggle('active',danger);
+  if(danger&&game.raceTime-_rearWarnBeepT>40){
+    AUDIO.beep(880,.05,.12);AUDIO.beep(660,.05,.10);
+    _rearWarnBeepT=game.raceTime;
+  }
+}
+
 function isGoingWrongWay(k){
   if(k.stunTime>0||k.speed<0.5||k.finished)return false;
   return Math.abs(angleDiff(k.angle,tangentAt(k.index)))>Math.PI*0.62; // >112°
@@ -1539,7 +1616,7 @@ function showResult(){
   game.state=STATE.RESULT;
   AUDIO.silenceEngine();
   setTimeout(menuMusicPlay,400); // laisser le moteur se taire avant la musique
-  hudEl.classList.remove('active');bridgeHudEl.classList.remove('active');wrongWayEl.classList.remove('active');document.getElementById('star-fx').classList.remove('active');
+  hudEl.classList.remove('active');bridgeHudEl.classList.remove('active');wrongWayEl.classList.remove('active');rearWarnEl.classList.remove('active');document.getElementById('star-fx').classList.remove('active');
   document.getElementById('touch-controls').classList.remove('active');
   const ranking=[...game.karts].sort((a,b)=>{const ap=a.finished?(1e9-a.finishTime):(a.laps+a.u),bp=b.finished?(1e9-b.finishTime):(b.laps+b.u);return bp-ap;});
   const place=ranking.indexOf(game.player)+1;
@@ -1857,6 +1934,7 @@ function loop(t){
     checkPickups();updateItemBoxes(dt);updateProjectiles(dt);updateDroppedItems(dt);updateAIItems();
     AUDIO.update(game.player.speed,game.player.char.stats.topSpeed,game.player.onTrack,game.player.speed>.3);
     if(!game.splitScreen)wrongWayEl.classList.toggle('active',isGoingWrongWay(game.player));
+    if(game.player&&!game.player.finished)checkRearDanger(game.player);
     renderScene();drawHUD();updateLapFlash(dtMs);
   } else if(game.state===STATE.PAUSE){
     renderScene();drawHUD(); // affiche la scène figée sous le menu pause
@@ -1869,7 +1947,7 @@ function pauseToMenu(){
   game.state=STATE.TITLE;
   document.getElementById('screen-pause').classList.remove('active');
   AUDIO.silenceEngine();
-  hudEl.classList.remove('active');bridgeHudEl.classList.remove('active');wrongWayEl.classList.remove('active');document.getElementById('star-fx').classList.remove('active');
+  hudEl.classList.remove('active');bridgeHudEl.classList.remove('active');wrongWayEl.classList.remove('active');rearWarnEl.classList.remove('active');document.getElementById('star-fx').classList.remove('active');
   document.getElementById('touch-controls').classList.remove('active');
   showScreen('screen-title');
 }
