@@ -1254,7 +1254,27 @@ function resolveKartCollisions(){
   const ks=game.karts;
   for(let i=0;i<ks.length;i++)for(let j=i+1;j<ks.length;j++){
     const a=ks[i],b=ks[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),minD=20;
-    if(d>0&&d<minD){const push=(minD-d)/2,nx=dx/d,ny=dy/d;a.x-=nx*push;a.y-=ny*push;b.x+=nx*push;b.y+=ny*push;a.speed*=.97;b.speed*=.97;}
+    if(d>0&&d<minD){
+      const aStar=a.starTime>0,bStar=b.starTime>0;
+      // Étoile vs étoile : se repoussent normalement, sans étourdir
+      if(aStar&&bStar){
+        const push=(minD-d)/2,nx=dx/d,ny=dy/d;
+        a.x-=nx*push;a.y-=ny*push;b.x+=nx*push;b.y+=ny*push;
+        continue;
+      }
+      // Une étoile contre un kart normal : l'étoile traverse, l'autre est projeté + étourdi
+      if(aStar||bStar){
+        const star=aStar?a:b, victim=aStar?b:a;
+        const sign=aStar?1:-1, push=(minD-d), nx=dx/d, ny=dy/d;
+        victim.x+=nx*push*sign;victim.y+=ny*push*sign; // pousse la victime hors du chemin
+        stunKart(victim,'POULET'); // étourdit comme un coup
+        // l'étoile ne ralentit pas et n'est pas déplacée
+        continue;
+      }
+      // Collision normale entre deux karts
+      const push=(minD-d)/2,nx=dx/d,ny=dy/d;
+      a.x-=nx*push;a.y-=ny*push;b.x+=nx*push;b.y+=ny*push;a.speed*=.97;b.speed*=.97;
+    }
   }
 }
 
