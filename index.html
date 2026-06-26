@@ -1572,6 +1572,12 @@ function drawSplitHUD(kart,vpY0,vpH,label){
   ctx.fillStyle='#9fd0ff';ctx.textAlign='right';
   ctx.fillText(Math.round((kart.speed/kart.char.stats.topSpeed)*180)+' km/h',RENDER_W-5,vpY0+4);
   if(kart.item){ctx.fillStyle=ITEM_INFO[kart.item].color;ctx.textAlign='left';ctx.fillText(kart.item,90,vpY0+4);}
+  // Wrong-way
+  if(game.state===STATE.RACING&&isGoingWrongWay(kart)){
+    ctx.font='bold 13px "Courier New"';ctx.textAlign='center';
+    ctx.fillStyle='#ff3333';
+    ctx.fillText('▼ MAUVAIS SENS ▼',RENDER_W/2,vpY0+vpH-22);
+  }
   ctx.restore();
 }
 function renderScene(){
