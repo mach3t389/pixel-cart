@@ -492,21 +492,20 @@ function drawPixelIcon(canvasEl,type){
 const TRACKS=[
   {
     id:0, name:"HOCHELAGA", subtitle:"Montréal, Québec", previewColor:"#E24B4A",
-    desc:"Circuit urbain · Chicane · Épingle",
-    descEn:"Urban circuit · Chicane · Hairpin",
-    // 9 pts · boucle fermée simple · aucun croisement · aucun pont
-    // Longue droite S/F au bas, chicane en haut, épingle à droite
-    // Espacements : 260, 237, 241, 246, 253, 263, 234, 260, 300 (min 234u)
+    desc:"Circuit urbain · Grande droite · Épingle serrée",
+    descEn:"Urban circuit · Long straight · Tight hairpin",
+    // Grande droite S/F au sud (550u), épingle serrée à l'ouest,
+    // chicane technique au nord, retour courbe à l'est
     controlPoints:[
-      {x:580, y:820}, // 0  - START/FINISH (droite sud, cap ouest)
-      {x:320, y:820}, // 1  - Bout ouest de la droite sud
-      {x:155, y:650}, // 2  - Virage sud-ouest, montée
-      {x:130, y:410}, // 3  - Côté ouest, cap nord
-      {x:250, y:195}, // 4  - Épingle nord-ouest
-      {x:500, y:155}, // 5  - Chicane nord (sommet)
-      {x:760, y:195}, // 6  - Sortie chicane nord-est
-      {x:890, y:390}, // 7  - Côté est, cap sud
-      {x:820, y:640}, // 8  - Virage sud-est, retour
+      {x:730, y:840}, // 0 - START/FINISH (droite, cap ouest)
+      {x:180, y:840}, // 1 - Bout ouest de la grande droite
+      {x: 70, y:710}, // 2 - Entrée épingle
+      {x: 60, y:500}, // 3 - Apex épingle (virage serré gauche)
+      {x:180, y:320}, // 4 - Sortie épingle, montée vers le nord
+      {x:420, y:220}, // 5 - Chicane apex 1 (gauche)
+      {x:640, y:260}, // 6 - Chicane apex 2 (droite)
+      {x:810, y:430}, // 7 - Grand virage nord-est
+      {x:820, y:650}, // 8 - Côté est, retour sud
     ],
     trackWidth:88, totalLaps:3,
     surfaceColors:{road:"#646464",roadLight:"#c4c4c4",grass:"#2d5a27",grassDark:"#1e3d1a",curb:["#E23A30","#F2F2F2"],bridge:null,bridgeLight:null},
@@ -514,15 +513,16 @@ const TRACKS=[
     decorations:[
       {type:"start_banner", t:0.004, side:0},
       {type:"grandstand",   t:0.03,  side:-1},
-      {type:"sign",         t:0.13,  side:1,  label:"T1"},
-      {type:"tree",         t:0.28,  side:-1},
-      {type:"sign",         t:0.44,  side:-1, label:"T4"},
-      {type:"grandstand",   t:0.57,  side:1},
-      {type:"tree",         t:0.70,  side:-1},
-      {type:"sign",         t:0.83,  side:1,  label:"T7"},
-      {type:"tree",         t:0.93,  side:-1},
+      {type:"grandstand",   t:0.08,  side:1},
+      {type:"sign",         t:0.18,  side:1,  label:"T1"},
+      {type:"tree",         t:0.30,  side:-1},
+      {type:"sign",         t:0.42,  side:1,  label:"T2"},
+      {type:"tree",         t:0.52,  side:1},
+      {type:"sign",         t:0.63,  side:-1, label:"T3"},
+      {type:"tree",         t:0.78,  side:1},
+      {type:"sign",         t:0.88,  side:-1, label:"T4"},
     ],
-    itemPositions:[0.07,0.28,0.50,0.72,0.90],
+    itemPositions:[0.06,0.22,0.42,0.62,0.82],
   },
   {
     id:1, name:"KITCHENER", subtitle:"Ontario, Canada", previewColor:"#1D9E75",
