@@ -959,7 +959,8 @@ function drawBanana(ctx,cx,baseY,scale){
   ctx.fillStyle="rgba(0,0,0,0.35)";
   ctx.beginPath();ctx.ellipse(cx,baseY-1,sz*0.5,sz*0.18,0,0,Math.PI*2);ctx.fill();
   ctx.imageSmoothingEnabled=false;
-  ctx.drawImage(px,(cx-sz/2)|0,(baseY-sz*1.8)|0,sz,sz);
+  // Posée au sol : bas du sprite sur le point de contact baseY
+  ctx.drawImage(px,(cx-sz/2)|0,(baseY-sz*0.9)|0,sz,sz);
   ctx.imageSmoothingEnabled=true;
 }
 
@@ -1253,7 +1254,7 @@ function updateAI(ai,dt){
 function resolveKartCollisions(){
   const ks=game.karts;
   for(let i=0;i<ks.length;i++)for(let j=i+1;j<ks.length;j++){
-    const a=ks[i],b=ks[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),minD=20;
+    const a=ks[i],b=ks[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),minD=13;
     if(d>0&&d<minD){
       const aStar=a.starTime>0,bStar=b.starTime>0;
       // Étoile vs étoile : se repoussent normalement, sans étourdir
