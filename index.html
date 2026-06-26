@@ -731,7 +731,16 @@ const AUDIO={
     this._skidGain.gain.setTargetAtTime((!onTrack&&moving)?0.10:0,t,0.05);
   },
   silenceEngine(){if(!this.ready)return;const t=this.ctx.currentTime;this._engGain.gain.setTargetAtTime(0,t,0.12);this._skidGain.gain.setTargetAtTime(0,t,0.12);},
-  beep(freq,dur,vol){if(!this.ready||!this.enabled)return;const o=this.ctx.createOscillator(),g=this.ctx.createGain();o.type='square';o.frequency.value=freq;g.gain.value=(vol||0.15)*(typeof sfxVolume!=='undefined'?sfxVolume:1);o.connect(g).connect(this._out);o.start();g.gain.setTargetAtTime(0,this.ctx.currentTime+dur*0.6,0.05);o.stop(this.ctx.currentTime+dur);},
+  beep(freq,dur,vol,x,y){if(!this.ready||!this.enabled)return;
+    // Atténuation par distance : si une position (x,y) est fournie, le son
+    // baisse selon l'éloignement du joueur (sons proches = forts, lointains = faibles).
+    let dmul=1;
+    if(typeof x==='number'&&typeof game!=='undefined'&&game.player){
+      const dd=Math.hypot(game.player.x-x,game.player.y-y);
+      dmul=1/(1+(dd/160)*(dd/160));
+      if(dmul<0.04)return; // trop loin pour être audible
+    }
+    const o=this.ctx.createOscillator(),g=this.ctx.createGain();o.type='square';o.frequency.value=freq;g.gain.value=(vol||0.15)*dmul*(typeof sfxVolume!=='undefined'?sfxVolume:1);o.connect(g).connect(this._out);o.start();g.gain.setTargetAtTime(0,this.ctx.currentTime+dur*0.6,0.05);o.stop(this.ctx.currentTime+dur);},
   toggle(){this.enabled=!this.enabled;if(!this.enabled)this.silenceEngine();},
 };
 
@@ -1122,7 +1131,7 @@ function checkPickups(){
         box.active=false;
         box.respawnIn=ITEM_RESPAWN;
         k.item=pickRandom(ITEM_LIST);
-        AUDIO.beep(880,.08,.14);
+        AUDIO.beep(880,.08,.14,k.x,k.y);
         if(k.isPlayer)showNotif(" "+ITEM_INFO[k.item].label,600,k.item);
       }
     }
@@ -1143,14 +1152,14 @@ function useItem(k){
   k.item=null;
   if(type==='TURBO'){
     k.boostTime=180;
-    AUDIO.beep(1200,.18,.18);
+    AUDIO.beep(1200,.18,.18,k.x,k.y);
     if(k.isPlayer)showNotif(" TURBO!",700,'TURBO');
     return;
   }
   if(type==='ETOILE'){
     k.starTime=360; // ~6 secondes à 60fps
     k.boostTime=Math.max(k.boostTime,120); // petit boost de vitesse aussi
-    AUDIO.beep(1400,.05,.15);setTimeout(()=>AUDIO.beep(1600,.05,.14),80);setTimeout(()=>AUDIO.beep(1800,.05,.13),160);setTimeout(()=>AUDIO.beep(2000,.12,.18),240);
+    AUDIO.beep(1400,.05,.15,k.x,k.y);setTimeout(()=>AUDIO.beep(1600,.05,.14,k.x,k.y),80);setTimeout(()=>AUDIO.beep(1800,.05,.13,k.x,k.y),160);setTimeout(()=>AUDIO.beep(2000,.12,.18,k.x,k.y),240);
     if(k.isPlayer){showNotif(" INVINCIBLE!",900,'ETOILE');document.getElementById('star-fx').classList.add('active');}
     return;
   }
@@ -1158,14 +1167,14 @@ function useItem(k){
     // Déposer derrière le kart
     const bx=k.x-Math.cos(k.angle)*28, by=k.y-Math.sin(k.angle)*28;
     game.droppedItems.push({x:bx,y:by,type:'BANANE',life:900,ownerId:k.char.id});
-    AUDIO.beep(440,.12,.12);
+    AUDIO.beep(440,.12,.12,k.x,k.y);
     if(k.isPlayer)showNotif(" BANANE!",600,'BANANE');
     return;
   }
   // Projectile en avant
   const px=k.x+Math.cos(k.angle)*20, py=k.y+Math.sin(k.angle)*20;
   game.projectiles.push({x:px,y:py,angle:k.angle,speed:info.speed,type,ownerId:k.char.id,life:info.life,bounceCount:type==='POULET'?4:0});
-  AUDIO.beep(660,.1,.15);
+  AUDIO.beep(660,.1,.15,k.x,k.y);
   if(k.isPlayer)showNotif(type==='FUSIL'?" FUSIL!":type==='COUTEAU'?" COUTEAU!":" POULET!",600,type);
 }
 
@@ -1179,7 +1188,7 @@ function updateProjectiles(dt){
     // Rebond du poulet hors-piste
     if(p.bounceCount>0){
       const near=nearestCenter(p.x,p.y);
-      if(!isOnTrack(near.dist)){p.angle+=Math.PI*.4;p.bounceCount--;AUDIO.beep(330,.05,.08);}
+      if(!isOnTrack(near.dist)){p.angle+=Math.PI*.4;p.bounceCount--;AUDIO.beep(330,.05,.08,p.x,p.y);}
     }
     // Collision avec les karts
     let hit=false;
@@ -1212,7 +1221,7 @@ function stunKart(k,type){
   if(k.stunTime>0||k.starTime>0)return; // invincible pendant l'étoile
   const dur={FUSIL:55,COUTEAU:40,POULET:65,BANANE:45}[type]||50; // ~0.7–1.1s à 60fps
   k.stunTime=dur;
-  AUDIO.beep(220,.22,.18);
+  AUDIO.beep(220,.22,.18,k.x,k.y);
   if(k.isPlayer){showNotif("💥 TOUCHÉ!",700);hudEl.classList.add('stun');setTimeout(()=>hudEl.classList.remove('stun'),700);}
 }
 
