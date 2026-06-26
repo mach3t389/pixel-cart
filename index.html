@@ -491,10 +491,10 @@ const KART8=[
   [4,1,1,3,3,1,1,4],[4,1,2,1,1,2,1,4],[4,4,1,1,1,1,4,4],[0,4,4,0,0,4,4,0],
 ];
 const CHARACTERS=[
-  {id:0,name:"MR BOOGERMAN",color:"#9B59B6",colorDark:"#6C3483",colorLight:"#C39BD3",notes:{speed:10,accel:6,handling:5},stats:{topSpeed:6.1,accel:0.062,handling:0.038,offTrackPenalty:0.52},sprite:KART8,aiProfile:{aggression:0.90,lineAccuracy:0.72,steerSpeed:0.085,brakeFactor:0.48}},
-  {id:1,name:"HANUMAN",     color:"#E67E22",colorDark:"#A04000",colorLight:"#F5CBA7",notes:{speed:8,accel:10,handling:7},stats:{topSpeed:5.8,accel:0.098,handling:0.048,offTrackPenalty:0.58},sprite:KART8,aiProfile:{aggression:0.75,lineAccuracy:0.88,steerSpeed:0.100,brakeFactor:0.60}},
-  {id:2,name:"BABYPIE",     color:"#FF6B9D",colorDark:"#C0276A",colorLight:"#FFB3D1",notes:{speed:6,accel:8,handling:10},stats:{topSpeed:5.0,accel:0.084,handling:0.072,offTrackPenalty:0.68},sprite:KART8,aiProfile:{aggression:0.58,lineAccuracy:0.93,steerSpeed:0.115,brakeFactor:0.72}},
-  {id:3,name:"ASHI",        color:"#00BCD4",colorDark:"#006B7A",colorLight:"#80DEEA",notes:{speed:7,accel:8,handling:8},stats:{topSpeed:5.4,accel:0.080,handling:0.058,offTrackPenalty:0.62},sprite:KART8,aiProfile:{aggression:0.65,lineAccuracy:0.87,steerSpeed:0.105,brakeFactor:0.63}},
+  {id:0,name:"MR BOOGERMAN",color:"#9B59B6",colorDark:"#6C3483",colorLight:"#C39BD3",notes:{speed:9,accel:5,handling:4},stats:{topSpeed:5.8,accel:0.055,handling:0.032,offTrackPenalty:0.46},sprite:KART8,aiProfile:{aggression:0.85,lineAccuracy:0.68,steerSpeed:0.080,brakeFactor:0.52}},
+  {id:1,name:"HANUMAN",     color:"#E67E22",colorDark:"#A04000",colorLight:"#F5CBA7",notes:{speed:7,accel:10,handling:6},stats:{topSpeed:5.5,accel:0.100,handling:0.046,offTrackPenalty:0.56},sprite:KART8,aiProfile:{aggression:0.72,lineAccuracy:0.88,steerSpeed:0.100,brakeFactor:0.62}},
+  {id:2,name:"BABYPIE",     color:"#FF6B9D",colorDark:"#C0276A",colorLight:"#FFB3D1",notes:{speed:6,accel:7,handling:10},stats:{topSpeed:5.3,accel:0.082,handling:0.078,offTrackPenalty:0.70},sprite:KART8,aiProfile:{aggression:0.55,lineAccuracy:0.95,steerSpeed:0.118,brakeFactor:0.75}},
+  {id:3,name:"ASHI",        color:"#00BCD4",colorDark:"#006B7A",colorLight:"#80DEEA",notes:{speed:7,accel:8,handling:8},stats:{topSpeed:5.5,accel:0.082,handling:0.060,offTrackPenalty:0.60},sprite:KART8,aiProfile:{aggression:0.65,lineAccuracy:0.88,steerSpeed:0.106,brakeFactor:0.65}},
 ];
 function kartPalette(ch){return{1:ch.color,2:ch.colorDark,3:ch.colorLight,4:"#161616",5:"#e8b187",6:"#20242b"};}
 
@@ -832,7 +832,13 @@ const INPUT={
       if(dUse&&!this._gpPrev.use&&game.state===STATE.RACING)useItem(game.player);
       this._gpPrev.start=dStart;
       this._gpPrev.use=dUse;
-      this.gamepad={left:dLeft,right:dRight,accel:dAccel,brake:dBrake,use:dUse};
+      // Axis brut pour steering analogique (deadzone 0.12)
+      const rawAxis=Math.abs(gp.axes[0])>0.12 ? gp.axes[0] : 0;
+      // Gaz analogique via RT (axes[7] ou buttons[7].value)
+      const accelAxis=Math.max(gp.axes[7]??0, gp.buttons[7]?.value??0, gp.axes[6]<-0.25?0.6:0);
+      const brakeAxis=Math.max(gp.axes[6]??0, gp.buttons[6]?.value??0);
+      this.gamepad={left:dLeft,right:dRight,accel:dAccel,brake:dBrake,use:dUse,
+                    steerAxis:rawAxis, accelAxis:Math.min(accelAxis,1), brakeAxis:Math.min(brakeAxis,1)};
     } else {
       this.gamepad=null;
       this._gpPrev.start=false;this._gpPrev.use=false;
@@ -844,6 +850,17 @@ const INPUT={
   get accel(){ return game.splitScreen ? !!(this.keyboard['ArrowUp']||this.touch.accel)     : !!(this.keyboard['ArrowUp']||this.keyboard['KeyW']||this.touch.accel||(this.gamepad&&this.gamepad.accel));},
   get brake(){ return game.splitScreen ? !!(this.keyboard['ArrowDown']||this.touch.brake)   : !!(this.keyboard['ArrowDown']||this.keyboard['KeyS']||this.touch.brake||(this.gamepad&&this.gamepad.brake));},
   get use(){   return !!(this.keyboard['ShiftLeft']||this.keyboard['ShiftRight']||this.touch.use);},
+  // Valeur analogique du stick (-1..1), retombe sur binaire si clavier/tactile
+  get steerAxis(){
+    if(this.gamepad&&Math.abs(this.gamepad.steerAxis)>0.05)return this.gamepad.steerAxis;
+    if(this.keyboard['ArrowLeft']||this.keyboard['KeyA']||this.touch.left)return -1;
+    if(this.keyboard['ArrowRight']||this.keyboard['KeyD']||this.touch.right)return 1;
+    return 0;
+  },
+  get accelAxis(){
+    if(this.gamepad&&this.gamepad.accelAxis>0.05)return this.gamepad.accelAxis;
+    return (this.keyboard['ArrowUp']||this.keyboard['KeyW']||this.touch.accel)?1:0;
+  },
   get p2left(){  return !!(this.keyboard['KeyA']||(this.gamepad&&this.gamepad.left));},
   get p2right(){ return !!(this.keyboard['KeyD']||(this.gamepad&&this.gamepad.right));},
   get p2accel(){ return !!(this.keyboard['KeyW']||(this.gamepad&&this.gamepad.accel));},
@@ -1126,12 +1143,22 @@ function updatePlayer(k,dt){
   const onTrack=isOnTrack(k.dist);
   const boostMult=k.boostTime>0?1.55:1.0;
   const speedMult=(onTrack?1.0:k.char.stats.offTrackPenalty)*boostMult;
-  const st=k.char.stats,steerStr=st.handling*(1-(k.speed/st.topSpeed)*.4);
-  const iL=k.isP2?INPUT.p2left:INPUT.left, iR=k.isP2?INPUT.p2right:INPUT.right;
+  const st=k.char.stats;
+  // Steering : analogique pour joueur 1 (stick), binaire pour P2/IA
+  let steerInput;
+  if(!k.isP2){
+    steerInput=INPUT.steerAxis; // -1..1, proportionnel au stick
+  } else {
+    steerInput=(INPUT.p2left?-1:0)+(INPUT.p2right?1:0);
+  }
+  // Réduction de maniabilité à haute vitesse (stabilité en ligne droite)
+  const speedRatio=k.speed/st.topSpeed;
+  const steerStr=st.handling*(1-speedRatio*.45)*(0.7+speedRatio*0.3+Math.abs(steerInput)*0.3);
+  k.angle+=steerInput*steerStr*dt;
+
   const iA=k.isP2?INPUT.p2accel:INPUT.accel, iB=k.isP2?INPUT.p2brake:INPUT.brake;
-  if(iL) k.angle-=steerStr*dt;
-  if(iR) k.angle+=steerStr*dt;
-  if(iA){const cap=st.topSpeed*Math.min(speedMult,boostMult*1.2);k.speed=Math.min(k.speed+st.accel*speedMult*dt,cap);}
+  const accelMag=k.isP2?(iA?1:0):INPUT.accelAxis; // gaz proportionnel via RT
+  if(accelMag>0.05){const cap=st.topSpeed*Math.min(speedMult,boostMult*1.2);k.speed=Math.min(k.speed+st.accel*speedMult*accelMag*dt,cap);}
   else if(iB)k.speed=Math.max(0,k.speed-.15*dt);
   else k.speed=Math.max(0,k.speed-(onTrack?.03:.08)*dt);
   k.x+=Math.cos(k.angle)*k.speed*dt*.5;
