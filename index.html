@@ -112,6 +112,8 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 /* ---- LANGUE ---- */
 #lang-btn{position:absolute;top:8px;right:10px;z-index:20;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.30);border-radius:20px;color:#fff;font-family:inherit;font-size:clamp(11px,1.8vw,14px);font-weight:bold;letter-spacing:1px;padding:4px 12px;cursor:pointer;}
 #lang-btn:hover{background:rgba(244,208,63,.25);border-color:#F4D03F;}
+#home-btn{position:absolute;top:8px;left:10px;z-index:20;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.30);border-radius:20px;color:#fff;font-family:inherit;font-size:clamp(11px,1.8vw,14px);font-weight:bold;letter-spacing:1px;padding:4px 12px;cursor:pointer;display:none;}
+#home-btn:hover{background:rgba(244,208,63,.25);border-color:#F4D03F;}
 
 /* ---- PAUSE ---- */
 #screen-pause{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.78);z-index:20;}
@@ -179,6 +181,7 @@ input[type=range].pk-slider::-moz-range-thumb{width:20px;height:20px;border-radi
 <div id="stage"><div id="frame">
   <canvas id="game-canvas" width="640" height="360"></canvas>
   <audio id="menu-music" src="menu-music.wav" loop preload="none"></audio>
+  <button id="home-btn">⌂ ACCUEIL</button>
   <button id="lang-btn">EN</button>
 
   <div id="screen-title" class="screen active">
@@ -505,8 +508,8 @@ function drawPixelIcon(canvasEl,type){
 const TRACKS=[
   {
     id:0, name:"HOCHELAGA", subtitle:"Montréal, Québec", previewColor:"#E24B4A",
-    desc:"Circuit urbain · Longue droite sud · Chicane au nord · Épingle est",
-    descEn:"Urban circuit · Long south straight · North chicane · East hairpin",
+    desc:"Circuit urbain · Chicane · Épingle",
+    descEn:"Urban circuit · Chicane · Hairpin",
     // 9 pts · boucle fermée simple · aucun croisement · aucun pont
     // Longue droite S/F au bas, chicane en haut, épingle à droite
     // Espacements : 260, 237, 241, 246, 253, 263, 234, 260, 300 (min 234u)
@@ -539,8 +542,8 @@ const TRACKS=[
   },
   {
     id:1, name:"KITCHENER", subtitle:"Ontario, Canada", previewColor:"#1D9E75",
-    desc:"Inspiré d'Aspen Motorsports Park\nÉpingle gauche · Longue droite · Courbes droite",
-    descEn:"Inspired by Aspen Motorsports Park\nLeft hairpin · Long straight · Right curves",
+    desc:"Épingle gauche · Longue droite · Courbes",
+    descEn:"Left hairpin · Long straight · Curves",
     // 10 pts bien espacés (min ~155u) — épingle T7 à gauche, longue droite en haut
     // Distances: 233,245,201,204,234,207,253,286,166,153
     controlPoints:[
@@ -574,8 +577,8 @@ const TRACKS=[
   },
   {
     id:2, name:"ÎLE NOTRE-DAME", subtitle:"Montréal, Québec", previewColor:"#378ADD",
-    desc:"Circuit Gilles Villeneuve\nVirage Senna · L'Épingle · Casino Straight",
-    descEn:"Circuit Gilles Villeneuve\nVirage Senna · L'Épingle · Casino Straight",
+    desc:"Virage Senna · L'Épingle · Casino",
+    descEn:"Senna Corner · The Hairpin · Casino",
     // 12 pts — forme distinctive Gilles Villeneuve
     // Casino Straight (longue droite en haut), Virage Senna (épingle droite),
     // chicane rapide droite, long arc bas, L'Épingle (U-turn gauche)
@@ -1352,6 +1355,7 @@ function showScreen(id){
   if(id)document.getElementById(id).classList.add('active');
   const inGame=(game.state===STATE.RACING||game.state===STATE.COUNTDOWN||game.state===STATE.PAUSE);
   document.getElementById('lang-btn').style.display=inGame?'none':'';
+  document.getElementById('home-btn').style.display=(inGame||game.state===STATE.TITLE)?'none':'';
 }
 
 let selectedChar=-1,selectedCharP2=-1,_selectingP=1; // quel joueur choisit (1 ou 2)
@@ -1806,6 +1810,7 @@ function init(){
   document.getElementById('stats-reset').addEventListener('click',()=>{resetStats();renderStats();AUDIO.beep(330,.1,.12);});
   // Langue
   document.getElementById('lang-btn').addEventListener('click',()=>{setLang(lang==='fr'?'en':'fr');if(game.state===STATE.STATS)renderStats();if(game.state===STATE.TRACK_SELECT)initTrackSelect();});
+  document.getElementById('home-btn').addEventListener('click',()=>{game.state=STATE.TITLE;menuMusicPlay();showScreen('screen-title');AUDIO.beep(500,.05,.1);});
   loadStats();
   updateTexts();
   showScreen('screen-title');game.state=STATE.TITLE;
