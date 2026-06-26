@@ -952,9 +952,9 @@ function drawProjectile(ctx,cx,baseY,scale,type){
   // Ombre
   ctx.fillStyle="rgba(0,0,0,0.35)";
   ctx.beginPath();ctx.ellipse(cx,baseY-1,sz*0.5,sz*0.18,0,0,Math.PI*2);ctx.fill();
-  // Icône
+  // Icône — posée au sol, même hauteur que les bananes
   ctx.imageSmoothingEnabled=false;
-  ctx.drawImage(px,(cx-sz/2)|0,(baseY-sz*1.9)|0,sz,sz);
+  ctx.drawImage(px,(cx-sz/2)|0,(baseY-sz*0.9)|0,sz,sz);
   ctx.imageSmoothingEnabled=true;
 }
 
