@@ -150,6 +150,7 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 .diff-card.sel[data-d="1"] .diff-card-label{color:#F4D03F;}
 .diff-card.sel[data-d="2"] .diff-card-label{color:#E24B4A;}
 .diff-card-desc{font-size:clamp(9px,1.4vw,11px);color:rgba(255,255,255,.5);letter-spacing:0.5px;}
+.params-section-label{font-size:clamp(10px,1.6vw,12px);font-weight:bold;letter-spacing:3px;color:rgba(255,255,255,.45);text-align:center;margin:10px 0 4px;}
 .lap-select-row{display:flex;align-items:center;justify-content:center;gap:16px;margin:4px 0 8px;}
 .lap-select-label{font-size:clamp(11px,1.8vw,14px);font-weight:bold;letter-spacing:2px;color:rgba(255,255,255,.7);}
 .lap-btns{display:flex;gap:8px;}
@@ -231,7 +232,9 @@ input[type=range].pk-slider::-moz-range-thumb{width:20px;height:20px;border-radi
   </div>
 
   <div id="screen-diff" class="screen">
-    <div class="select-title" data-i18n="choose_diff">CHOISIS LA DIFFICULTÉ</div>
+    <div class="select-title" data-i18n="race_params">PARAMÈTRES DE COURSE</div>
+
+    <div class="params-section-label" data-i18n="set_diff">DIFFICULTÉ</div>
     <div class="diff-cards" id="diff-cards">
       <div class="diff-card" data-d="0">
         <div class="diff-card-icon"><canvas class="diff-icon-canvas" data-icon="LEAF" width="32" height="32"></canvas></div>
@@ -249,7 +252,8 @@ input[type=range].pk-slider::-moz-range-thumb{width:20px;height:20px;border-radi
         <div class="diff-card-desc" data-i18n="diff_hard_desc">IA agressive · Bonne chance</div>
       </div>
     </div>
-    <div class="lap-select-row" id="lap-select-row">
+
+    <div class="lap-select-row">
       <span class="lap-select-label" data-i18n="set_laps">TOURS</span>
       <div class="lap-btns">
         <button class="lap-btn" data-laps="1">1</button>
@@ -257,6 +261,16 @@ input[type=range].pk-slider::-moz-range-thumb{width:20px;height:20px;border-radi
         <button class="lap-btn" data-laps="5">5</button>
       </div>
     </div>
+
+    <div class="lap-select-row">
+      <span class="lap-select-label" data-i18n="set_cc">CC</span>
+      <div class="lap-btns">
+        <button class="lap-btn" data-cc="50">50</button>
+        <button class="lap-btn sel" data-cc="100">100</button>
+        <button class="lap-btn" data-cc="150">150</button>
+      </div>
+    </div>
+
     <div class="screen-nav-row">
       <button class="go-btn go-back" id="diff-back">◀ RETOUR</button>
       <button class="go-btn" id="diff-next">SUIVANT ▶</button>
@@ -374,8 +388,9 @@ const DIFFS=[
   {key:'normal', aiSpeed:0.96, band:1.00, itemMin:60, itemMax:150, color:'#F4D03F'},
   {key:'hard',   aiSpeed:1.05, band:1.12, itemMin:30, itemMax:80,  color:'#E24B4A'},
 ];
-let difficulty=1; // NORMAL par défaut
-let selectedLaps=3; // nombre de tours (1, 3 ou 5)
+let difficulty=1;    // NORMAL par défaut
+let selectedLaps=3;  // nombre de tours (1, 3 ou 5)
+let selectedCC=100;  // cylindrée (50 / 100 / 150)
 
 /* ----- PERSISTANCE (localStorage) ----- */
 const STATS_KEY='pixelkart_stats_v1';
@@ -407,7 +422,9 @@ const STRINGS={
     st_overall:'GÉNÉRAL', st_races:'Courses', st_wins:'Victoires', st_podiums:'Podiums',
     st_winrate:'% Victoire', st_besttimes:'MEILLEURS TEMPS', st_bestlaps:'MEILLEURS TOURS',
     st_none:'—', st_nodata:'Aucune partie jouée',
-    set_laps:'TOURS',
+    set_laps:'TOURS', set_cc:'CC', set_diff:'DIFFICULTÉ',
+    race_params:'PARAMÈTRES DE COURSE',
+    choose_diff:'CHOISIS LA DIFFICULTÉ',
     r_place:'POSITION', r_time_label:'TEMPS', r_best_lap:'MEILLEUR TOUR',
     players_1:'👤 1 JOUEUR', players_2:'👥 2 JOUEURS',
   },
@@ -428,7 +445,9 @@ const STRINGS={
     st_overall:'OVERALL', st_races:'Races', st_wins:'Wins', st_podiums:'Podiums',
     st_winrate:'Win %', st_besttimes:'BEST TIMES', st_bestlaps:'BEST LAPS',
     st_none:'—', st_nodata:'No races played',
-    set_laps:'LAPS',
+    set_laps:'LAPS', set_cc:'CC', set_diff:'DIFFICULTY',
+    race_params:'RACE SETTINGS',
+    choose_diff:'CHOOSE DIFFICULTY',
     r_place:'POSITION', r_time_label:'TIME', r_best_lap:'BEST LAP',
     players_1:'👤 1 PLAYER', players_2:'👥 2 PLAYERS',
   },
@@ -1484,8 +1503,11 @@ function initDiffSelect(){
   document.querySelectorAll('#diff-cards .diff-card').forEach(c=>{
     c.classList.toggle('sel',+c.dataset.d===difficulty);
   });
-  document.querySelectorAll('.lap-btn').forEach(b=>{
+  document.querySelectorAll('.lap-btn[data-laps]').forEach(b=>{
     b.classList.toggle('sel',+b.dataset.laps===selectedLaps);
+  });
+  document.querySelectorAll('.lap-btn[data-cc]').forEach(b=>{
+    b.classList.toggle('sel',+b.dataset.cc===selectedCC);
   });
 }
 // Dessiner les icônes pixel art des cartes de difficulté au premier appel
@@ -1594,6 +1616,7 @@ function startRace(){
   menuMusicStop();
   setupTrack(TRACKS[selectedTrackIdx]);
   currentTrack.totalLaps=selectedLaps;
+  const CC_MULT={50:0.65,100:1.0,150:1.35}[selectedCC]||1.0;
   const playerChar=CHARACTERS[selectedChar];
   const others=CHARACTERS.filter(c=>c.id!==playerChar.id);
   game.karts=[];
@@ -1608,6 +1631,13 @@ function startRace(){
   }
   game.raceTime=0;game.countdown=3600;game.state=STATE.COUNTDOWN;
   game._lapStart=0;game._bestLapThisRace=1e18;
+  // Appliquer le multiplicateur CC à tous les karts
+  game.karts.forEach(k=>{
+    k.char={...k.char,stats:{...k.char.stats,
+      topSpeed:k.char.stats.topSpeed*CC_MULT,
+      acceleration:k.char.stats.acceleration*CC_MULT
+    }};
+  });
   initItemBoxes();
   showScreen(null);
   if(!game.splitScreen)hudEl.classList.add('active');
@@ -1857,8 +1887,11 @@ function init(){
   document.querySelectorAll('#diff-cards .diff-card').forEach(c=>{
     c.addEventListener('click',()=>{difficulty=+c.dataset.d;initDiffSelect();AUDIO.init();AUDIO.resume();AUDIO.beep(700,.06,.12);});
   });
-  document.querySelectorAll('.lap-btn').forEach(b=>{
+  document.querySelectorAll('.lap-btn[data-laps]').forEach(b=>{
     b.addEventListener('click',()=>{selectedLaps=+b.dataset.laps;initDiffSelect();AUDIO.beep(660,.06,.1);});
+  });
+  document.querySelectorAll('.lap-btn[data-cc]').forEach(b=>{
+    b.addEventListener('click',()=>{selectedCC=+b.dataset.cc;initDiffSelect();AUDIO.beep(700,.06,.1);});
   });
   document.getElementById('start-race-btn').addEventListener('click',()=>{AUDIO.init();AUDIO.resume();startRace();});
   document.getElementById('r-replay').addEventListener('click',()=>startRace());
