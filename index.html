@@ -140,7 +140,8 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 .diff-card.sel[data-d="0"]{background:rgba(29,158,117,.22);border-color:#1D9E75;}
 .diff-card.sel[data-d="1"]{background:rgba(244,208,63,.18);border-color:#F4D03F;}
 .diff-card.sel[data-d="2"]{background:rgba(226,75,74,.22);border-color:#E24B4A;}
-.diff-card-icon{font-size:clamp(28px,6vw,44px);margin-bottom:8px;}
+.diff-card-icon{margin-bottom:8px;display:flex;justify-content:center;}
+.diff-icon-canvas{width:clamp(36px,7vw,56px);height:clamp(36px,7vw,56px);image-rendering:pixelated;image-rendering:crisp-edges;}
 .diff-card-label{font-size:clamp(11px,2vw,14px);font-weight:bold;letter-spacing:2px;color:#fff;margin-bottom:6px;}
 .diff-card.sel[data-d="0"] .diff-card-label{color:#1D9E75;}
 .diff-card.sel[data-d="1"] .diff-card-label{color:#F4D03F;}
@@ -222,17 +223,17 @@ input[type=range].pk-slider::-moz-range-thumb{width:20px;height:20px;border-radi
     <div class="select-title" data-i18n="choose_diff">CHOISIS LA DIFFICULTÉ</div>
     <div class="diff-cards" id="diff-cards">
       <div class="diff-card" data-d="0">
-        <div class="diff-card-icon">🌿</div>
+        <div class="diff-card-icon"><canvas class="diff-icon-canvas" data-icon="LEAF" width="32" height="32"></canvas></div>
         <div class="diff-card-label" data-i18n="diff_easy">FACILE</div>
         <div class="diff-card-desc" data-i18n="diff_easy_desc">IA lente · Items fréquents</div>
       </div>
       <div class="diff-card sel" data-d="1">
-        <div class="diff-card-icon">⚡</div>
+        <div class="diff-card-icon"><canvas class="diff-icon-canvas" data-icon="BOLT" width="32" height="32"></canvas></div>
         <div class="diff-card-label" data-i18n="diff_normal">NORMAL</div>
         <div class="diff-card-desc" data-i18n="diff_normal_desc">Équilibré · Recommandé</div>
       </div>
       <div class="diff-card" data-d="2">
-        <div class="diff-card-icon">💀</div>
+        <div class="diff-card-icon"><canvas class="diff-icon-canvas" data-icon="SKULL" width="32" height="32"></canvas></div>
         <div class="diff-card-label" data-i18n="diff_hard">DIFFICILE</div>
         <div class="diff-card-desc" data-i18n="diff_hard_desc">IA agressive · Bonne chance</div>
       </div>
@@ -460,8 +461,11 @@ const PIX_GRIDS={
   BANANE: ['..YYY...','YY...Y..','Y.....Y.','Y.....Y.','YY...YY.','..YYYY..','...tt...','........'],
   TURBO:  ['....CC..','...CC...','..CCCC..','..CC....','CCCCCC..','..CC....','..C.....','........'],
   ETOILE: ['...Y....','YYYYYYY.','YYYYYYY.','.YYYYY..','YY.Y.YY.','...Y....','...Y....','........'],
+  LEAF:   ['...N....','..NNN...','..NNN...','NNNNNNN.','NNNNNNN.','.NNNNN..','..nnn...','...n....'],
+  BOLT:   ['....BB..','...BB...','..BBBB..','.BBBBB..','..BBBB..','...BB...','....B...','........'],
+  SKULL:  ['.WWWWW..','WWWWWWW.','W.W.W.W.','WWWWWWW.','WWWWWWW.','.WXXXW..','..XXX...','........'],
 };
-const PIX_COL={G:'#c0c8d0',b:'#7a5230',R:'#e03030',W:'#f4f4f4',O:'#e07820',Y:'#f4d03f',t:'#7a5000',C:'#18d8ff'};
+const PIX_COL={G:'#c0c8d0',b:'#7a5230',R:'#e03030',W:'#f4f4f4',O:'#e07820',Y:'#f4d03f',t:'#7a5000',C:'#18d8ff',N:'#4ecb71',n:'#2a7a40',B:'#f4d03f',X:'#2a2a2a'};
 function drawPixelIcon(canvasEl,type){
   const g=PIX_GRIDS[type];if(!g||!canvasEl)return;
   const c=canvasEl.getContext('2d');c.clearRect(0,0,32,32);
@@ -1423,6 +1427,12 @@ function initDiffSelect(){
     c.classList.toggle('sel',+c.dataset.d===difficulty);
   });
 }
+// Dessiner les icônes pixel art des cartes de difficulté au premier appel
+(function(){
+  document.querySelectorAll('.diff-icon-canvas').forEach(cv=>{
+    drawPixelIcon(cv,cv.dataset.icon);
+  });
+})();
 function goToTrackSelect(){
   game.state=STATE.TRACK_SELECT;initTrackSelect();showScreen('screen-track');
 }
