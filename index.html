@@ -955,6 +955,64 @@ const AUDIO={
   toggle(){this.enabled=!this.enabled;if(!this.enabled)this.silenceEngine();},
 };
 
+/* ----- VOIX ENREGISTRÉES (.m4a) — joués SEULEMENT pour les humains -----
+   Mapping par personnage : Boogerman=0, Hanuman=1, Babypie=2, Aashi=3.
+   Une variante propre à un perso ne joue QUE pour ce perso ; sinon repli générique. */
+const SFX_BASE='sfx/Sound effects 1/';
+const SFX_FILES={
+  // génériques (n'importe quel humain)
+  throw:    ['Throw object.m4a'],
+  boost:    ['Boost.m4a'],
+  lap:      ['Lap.m4a'],
+  wrongway: ['Wrong way.m4a'],
+  laugh:    ['Laughing.m4a'],
+  win_any:  ['First position (All).m4a'],
+  // coups réussis — pool par personnage (rotation aléatoire interne)
+  hit_0:    ['Hit somebody (Mr Boogerman).m4a','Hit somebody 3 (Boogerman).m4a'],
+  hit_2:    ['Hit somebody (babypie).m4a','Hit somebody 2 (Babypie).m4a'],
+  hit_3:    ['hit somebody (Aashi).m4a'],
+  // dépôt de DOSA — Hanuman a une voix dédiée ("Banana")
+  drop_1:   ['Banana (Hanuman).m4a'],
+  // se faire toucher / glisser — Babypie
+  stun_2:   ['Got hit and slipping (babypie).m4a'],
+  // ramassage d'item — Hanuman
+  pickup_1: ['Got it (Hanuman).m4a'],
+  // résultats par personnage
+  win_1:    ['First place (Hanuman).m4a'],
+  podium_2: ['Podium (Babypie).m4a'],
+  last_0:   ['Last position (Boogerman).m4a'],
+  last_1:   ['Last position (Hanuman).m4a'],
+};
+const SFX={
+  pool:{}, loaded:false,
+  preload(){
+    if(this.loaded)return; this.loaded=true;
+    for(const key in SFX_FILES){
+      this.pool[key]=SFX_FILES[key].map(fn=>{
+        const a=new Audio(encodeURI(SFX_BASE+fn)); a.preload='auto';
+        try{a.load();}catch(e){}
+        return a;
+      });
+    }
+  },
+  // joue une clé ; retourne true si un clip existe et a démarré
+  play(key,vol){
+    if(typeof AUDIO!=='undefined'&&!AUDIO.enabled)return false;
+    const arr=this.pool[key]; if(!arr||!arr.length)return false;
+    const base=arr[(Math.random()*arr.length)|0];
+    const a=base.cloneNode(true); // clone = lectures superposables
+    a.volume=Math.max(0,Math.min(1,(vol==null?1:vol)*(typeof sfxVolume!=='undefined'?sfxVolume:1)));
+    a.play().catch(()=>{});
+    return true;
+  },
+  // variante propre au perso (prefix_charId) sinon repli (ou rien si fallback null)
+  playChar(prefix,charId,fallbackKey,vol){
+    if(this.play(prefix+'_'+charId,vol))return true;
+    return fallbackKey?this.play(fallbackKey,vol):false;
+  },
+};
+function isHuman(k){return !!(k&&(k.isPlayer||k.isP2));}
+
 /* ----- INPUT ----- */
 const INPUT={
   keyboard:{},touch:{left:false,right:false,accel:false,brake:false,use:false},
@@ -1348,7 +1406,7 @@ function onLapCrossed(k){
     if(lapTime>3000)game._bestLapThisRace=Math.min(game._bestLapThisRace,lapTime);
   }
   if(k.laps>=currentTrack.totalLaps){k.finished=true;k.finishTime=game.raceTime;if(k.isPlayer)finishRace();}
-  else if(k.isPlayer){AUDIO.beep(880,.12,.18);showLapFlash();}
+  else if(k.isPlayer){if(!SFX.play('lap',.85))AUDIO.beep(880,.12,.18);showLapFlash();}
 }
 
 /* ----- ITEMS SYSTÈME ----- */
@@ -1375,6 +1433,7 @@ function checkPickups(){
         box.respawnIn=ITEM_RESPAWN;
         k.item=pickRandom(ITEM_LIST);
         AUDIO.beep(880,.08,.14,k.x,k.y);
+        if(isHuman(k))SFX.playChar('pickup',k.char.id,null,.85); // Hanuman a "Got it"
         if(k.isPlayer)showNotif(" "+ITEM_INFO[k.item].label,600,k.item);
       }
     }
@@ -1396,6 +1455,7 @@ function useItem(k){
   if(type==='CHILI'){
     k.boostTime=200;
     AUDIO.beep(1400,.06,.18,k.x,k.y);setTimeout(()=>AUDIO.beep(1600,.06,.16,k.x,k.y),60);setTimeout(()=>AUDIO.beep(1900,.12,.18,k.x,k.y),130);
+    if(isHuman(k))SFX.play('boost',.9);
     if(k.isPlayer)showNotif("🌶️ CHILI!",700,'CHILI');
     return;
   }
@@ -1409,6 +1469,7 @@ function useItem(k){
       game.projectiles.push({x:px,y:py,angle:k.angle+da,speed:info.speed,type:'KURKURE',ownerId:k.char.id,life:info.life,bounceCount:0});
     }
     AUDIO.beep(900,.05,.14,k.x,k.y);setTimeout(()=>AUDIO.beep(1100,.05,.12,k.x,k.y),40);setTimeout(()=>AUDIO.beep(1300,.08,.14,k.x,k.y),90);
+    if(isHuman(k))SFX.play('throw',.8);
     return;
   }
   if(type==='DOSA'){
@@ -1416,6 +1477,7 @@ function useItem(k){
     const bx=k.x-Math.cos(k.angle)*28, by=k.y-Math.sin(k.angle)*28;
     game.droppedItems.push({x:bx,y:by,type:'DOSA',life:900,ownerId:k.char.id});
     AUDIO.beep(380,.14,.12,k.x,k.y);setTimeout(()=>AUDIO.beep(280,.10,.10,k.x,k.y),80);
+    if(isHuman(k))SFX.playChar('drop',k.char.id,'throw',.85); // Hanuman a sa voix "Banana"
     if(k.isPlayer)showNotif("🫓 DOSA!",600,'DOSA');
     return;
   }
@@ -1425,6 +1487,7 @@ function useItem(k){
   if(type==='CHAPPAL'){AUDIO.beep(520,.08,.15,k.x,k.y);setTimeout(()=>AUDIO.beep(320,.06,.12,k.x,k.y),60);}
   else if(type==='CUILLERE'){AUDIO.beep(740,.1,.14,k.x,k.y);}
   else{AUDIO.beep(500,.08,.13,k.x,k.y);} // OIGNON
+  if(isHuman(k))SFX.play('throw',.8);
   if(k.isPlayer)showNotif(type==='CHAPPAL'?"🩴 CHAPPAL!":type==='CUILLERE'?"🥄 CUILLÈRE!":"🧅 OIGNON!",600,type);
 }
 
@@ -1485,6 +1548,7 @@ function updateProjectiles(dt){
         if(k.char.id===p.ownerId)continue;
         if(Math.hypot(k.x-p.x,k.y-p.y)<16){
           stunKart(k,p.type);
+          playAttackerHit(p.ownerId,k);
           hit=true; break;
         }
       }
@@ -1501,10 +1565,18 @@ function updateDroppedItems(dt){
     d.life-=dt;
     for(const k of game.karts){
       if(k.char.id===d.ownerId)continue;
-      if(Math.hypot(k.x-d.x,k.y-d.y)<15){stunKart(k,'DOSA');game.droppedItems.splice(i,1);break;}
+      if(Math.hypot(k.x-d.x,k.y-d.y)<15){stunKart(k,'DOSA');playAttackerHit(d.ownerId,k);game.droppedItems.splice(i,1);break;}
     }
     if(d.life<=0)game.droppedItems.splice(i,1);
   }
+}
+
+// Voix du tireur quand SON projectile touche quelqu'un (humains seulement) + taunt sur le leader
+function playAttackerHit(ownerId,victim){
+  const owner=game.karts.find(kk=>kk.char.id===ownerId);
+  if(!isHuman(owner))return;
+  SFX.playChar('hit',owner.char.id,null,1.0);
+  if(victim&&computePlace(victim)===1&&Math.random()<0.25)SFX.play('laugh',.9);
 }
 
 // Effet déraper : durées courtes pour ne pas pénaliser trop longtemps
@@ -1513,6 +1585,7 @@ function stunKart(k,type){
   const dur={CHAPPAL:60,CUILLERE:42,OIGNON:70,DOSA:48,KURKURE:35}[type]||50;
   k.stunTime=dur;
   AUDIO.beep(220,.22,.18,k.x,k.y);
+  if(isHuman(k))SFX.playChar('stun',k.char.id,null,1.0); // voix victime (Babypie a "got hit and slipping")
   if(k.isPlayer){showNotif("💥 TOUCHÉ!",700);hudEl.classList.add('stun');setTimeout(()=>hudEl.classList.remove('stun'),700);}
 }
 
@@ -1569,6 +1642,7 @@ function resolveKartCollisions(){
         const sign=aStar?1:-1, push=(minD-d), nx=dx/d, ny=dy/d;
         victim.x+=nx*push*sign;victim.y+=ny*push*sign;
         stunKart(victim,'OIGNON');
+        playAttackerHit(star.char.id,victim);
         continue;
       }
       // Collision normale entre deux karts
@@ -1965,6 +2039,13 @@ function showResult(){
   document.getElementById('touch-controls').classList.remove('active');
   const ranking=[...game.karts].sort((a,b)=>{const ap=a.finished?(1e9-a.finishTime):(a.laps+a.u),bp=b.finished?(1e9-b.finishTime):(b.laps+b.u);return bp-ap;});
   const place=ranking.indexOf(game.player)+1;
+  // Voix de résultat selon le perso du joueur (après la fanfare de fin)
+  const _cid=game.player.char.id,_n=ranking.length;
+  setTimeout(()=>{
+    if(place===1)SFX.playChar('win',_cid,'win_any',1.0);
+    else if(place===_n)SFX.playChar('last',_cid,null,1.0);
+    else SFX.playChar('podium',_cid,null,.95); // 2e–3e : voix dédiée si dispo (Babypie)
+  },500);
   document.getElementById('r-pos').textContent=ordinal(place);
   document.getElementById('r-time').textContent=formatTime(game.player.finishTime||game.raceTime);
   let html='';ranking.forEach((k,i)=>{
@@ -2262,7 +2343,12 @@ function loop(t){
     resolveKartCollisions();
     checkPickups();updateItemBoxes(dt);updateProjectiles(dt);updateDroppedItems(dt);updateAIItems();
     AUDIO.update(game.player.speed,game.player.char.stats.topSpeed,game.player.onTrack,game.player.speed>.3);
-    if(!game.splitScreen)wrongWayEl.classList.toggle('active',isGoingWrongWay(game.player));
+    if(!game.splitScreen){
+      const _ww=isGoingWrongWay(game.player);
+      wrongWayEl.classList.toggle('active',_ww);
+      if(_ww&&!game._wwActive&&game.raceTime-(game._wwSfxT||-999)>120){SFX.play('wrongway',.9);game._wwSfxT=game.raceTime;}
+      game._wwActive=_ww;
+    }
     if(game.player&&!game.player.finished)checkRearDanger(game.player);
     renderScene();drawHUD();updateLapFlash(dtMs);
   } else if(game.state===STATE.PAUSE){
@@ -2283,6 +2369,7 @@ function pauseToMenu(){
 
 function init(){
   setupTrack(TRACKS[0]);
+  SFX.preload();
   startTipRotation();
   // Icônes pixelisées des boutons du menu — sz/3 source pour plus de pixels, fond blanc opaque
   document.querySelectorAll('.menu-pixel-icon').forEach(cv=>{
