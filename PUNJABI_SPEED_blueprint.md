@@ -40,7 +40,8 @@
 - **Contexte personnel** :
   - Alexis Morel (Montréal) + famille Nagpal (Kitchener, Ontario, origine Inde)
   - Les circuits et personnages reflètent leurs vies
-- **Favicon** : SVG inline — lettre "P" rouge (`#E24B4A`) en Courier New bold sur fond noir
+- **Favicon** : SVG inline — lettre "P" en dégradé saffron→or (`#FF8A1E`→`#FFC83D`) sur fond marron, assorti au thème indien/racing
+- **Palette UI** : saffron `#FF8A1E` · or `#FFC83D` · marron `#5a1208`/`#2d0a0a` — fond des écrans en dégradé radial marron, accents or partout
 
 ---
 
@@ -55,11 +56,11 @@ index.html
 ├── <body>
 │   ├── #stage → #frame (conteneur 16:9 centré)
 │   │   ├── Écrans UI (divs)
-│   │   │   ├── #screen-title       Titre + sélection 1J/2J
+│   │   │   ├── #screen-title       Titre + 1J/2J + description + tips rotatifs
 │   │   │   ├── #screen-select      Sélection de personnage
 │   │   │   ├── #screen-diff        Paramètres de course (diff/tours/CC)
 │   │   │   ├── #screen-track       Sélection de circuit (minimap)
-│   │   │   ├── #screen-settings    Volume musique + SFX
+│   │   │   ├── #screen-settings    Volume musique + SFX + contrôles (clavier/manette)
 │   │   │   ├── #screen-stats       Statistiques de session
 │   │   │   ├── #screen-result      Résultats de course
 │   │   │   └── #screen-pause       Menu pause
@@ -87,9 +88,9 @@ index.html
 │       ├── MODE 7                  Moteur rendu sol pseudo-3D
 │       ├── BILLBOARDS              Sprites 3D (karts, items, décors)
 │       ├── PHYSICS                 updatePlayer, updateAI, collisions
-│       ├── ITEMS                   Boîtes, projectiles, bananes
+│       ├── ITEMS                   Boîtes, projectiles, items posés (dosa)
 │       ├── HUD                     drawHUD, minimap, timer
-│       ├── I18N                    T(key), STRINGS.fr/en
+│       ├── I18N                    T(key), STRINGS.fr/en/pa/hi, cycleLang
 │       ├── SCREENS                 showScreen, initDiffSelect, etc.
 │       └── GAME LOOP               startRace, loop (rAF)
 ```
@@ -142,12 +143,17 @@ Sprites : tableaux pixel art `KART8` (8×8) et `KART12` (12×12), dessinés avec
 
 Trois sélecteurs indépendants, persistants jusqu'à la fin de la session :
 
-### Difficulté
-| Valeur | Label | Effet |
-|--------|-------|-------|
-| 0 | FACILE | IA lente, items fréquents |
-| 1 | NORMAL (défaut) | Équilibré |
-| 2 | DIFFICILE | IA agressive |
+**Disposition** : grille uniforme « label + 3 options » (`.params-rows` → `.prow` → `.prow-label` + `.opt-grid`). Les trois rangées (DIFFICULTÉ, TOURS, CC) partagent exactement la même structure : label centré dans une colonne de largeur fixe, puis 3 boutons `.opt-btn` de taille identique alignés en colonnes via `grid-template-columns:repeat(3,1fr)`. Pas de panneau/boîte derrière. Les `id` `diff-cards` / `pad-row-1` / `pad-row-2` (sur les `.opt-grid`) servent à la navigation manette.
+
+### Difficulté — niveaux de piment 🌶️
+Icônes pixelisées thématiques (échelle de piquant) au lieu de symboles abstraits :
+| Valeur | Label | Icône (`DIFF_ICONS`) | Effet |
+|--------|-------|------|-------|
+| 0 | FACILE | 🫑 poivron doux (`LEAF`) | IA lente, items fréquents |
+| 1 | NORMAL (défaut) | 🌶️ piment (`BOLT`) | Équilibré |
+| 2 | DIFFICILE | 🔥 feu (`SKULL`) | IA agressive |
+
+> Les clés internes (`LEAF`/`BOLT`/`SKULL`) sont historiques ; seules les valeurs emoji de `DIFF_ICONS` ont changé.
 
 ### Nombre de tours
 Options : **1 / 3 (défaut) / 5**
@@ -296,26 +302,44 @@ score = finished ? (1e9 - finishTime) : (laps + u) * 1000
 
 ## 12. Internationalisation (i18n)
 
-Deux langues : **FR** (défaut) et **EN**. Basculement via bouton `#lang-btn` (top-right).
+**Quatre langues** : **FR** (défaut) · **EN** · **PA** (ਪੰਜਾਬੀ) · **HI** (हिंदी). Le bouton `#lang-btn` (top-right) **cycle** FR→EN→PA→HI→FR via `cycleLang()` ; il affiche la prochaine langue (`{fr:'EN',en:'PA',pa:'HI',hi:'FR'}`).
 
 ```js
-T(key)  // retourne STRINGS[lang][key]
-// Attribut HTML : data-i18n="key" → mis à jour par applyI18n()
+T(key)            // retourne STRINGS[lang][key]
+updateTexts()     // parcourt [data-i18n] et applique T(key)
+cycleLang()       // langue suivante puis updateTexts() + showTip()
 ```
 
-Toutes les chaînes UI sont traduites : menus, HUD, notifications, descriptions.
+`updateTexts()` préserve les `<canvas class="menu-pixel-icon">` dans les boutons (met à jour seulement le nœud texte voisin, sans écraser le canvas).
+
+Toutes les chaînes UI sont traduites dans les 4 langues : menus, HUD, notifications, descriptions d'items, contrôles, description du jeu, et les **tips rotatifs** (`tips` = tableau `[emoji, texte]`).
+
+### Écran titre — description + tips
+- **Description du jeu** (`#game-desc`, clé `game_desc`) : phrase complète, texte crème `#FFE2B0` + ombre pour lisibilité sur fond marron.
+- **Barre de tips** (`#tip-bar`) : fait défiler les 6 items toutes les 4 s (`startTipRotation()`/`showTip()`), icône emoji rendue en canvas pixelisé (`_buildPixelEmoji`, `sz/3`). S'arrête hors de l'écran titre.
 
 ---
 
 ## 13. Système d'input
 
+### En course
 ```
 Clavier   : ← → (direction) · ↑ (gaz) · ↓ (frein) · Shift (item)
-Manette   : Gamepad API — axes[0] steer, RT gaz, LT frein, A item
+Manette   : Gamepad API — axes[0] steer, RT gaz, LT frein, A item, B retour
 Tactile   : Boutons ◀ ▶ (direction) · A (gaz) · B (frein) · USE (item)
 ```
 
 Multi-touch supporté. Boutons tactiles larges (min 80×80px) pour usage en voiture.
+La référence des contrôles est listée dans **Paramètres** (grille ⌨ Clavier / 🎮 Manette), plus dans l'écran titre.
+
+### Navigation des menus (modèle de focus unifié)
+Chaque écran retourne une liste de « lignes » via `menuRows()` :
+- `type:'sel'` → ←→ change la valeur (`dec`/`inc`), `el` reçoit la surbrillance
+- `type:'btn'` → ←→ change de bouton, A active
+
+`menuNav(action)` dispatche `up/down/left/right/ok/back` ; `renderMenuFocus()` applique les classes `.nav-focus` / `.nav-btn-focus`. Clavier, manette (front détecté par `_navPrev`) et tactile partagent ce modèle.
+
+> **Indicateur de focus conditionnel** : `renderMenuFocus()` n'ajoute aucune surbrillance si `!INPUT._gpConnected`. Sans manette branchée, aucun contour blanc n'apparaît — l'utilisateur tactile/souris ne voit pas de sélection « fantôme ». Le contour réapparaît dès qu'une manette est connectée.
 
 ---
 
