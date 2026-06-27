@@ -519,8 +519,20 @@ function T(k){return(STRINGS[lang]||STRINGS.fr)[k]||(STRINGS.fr[k]||k);}
 function updateTexts(){
   document.querySelectorAll('[data-i18n]').forEach(el=>{
     const k=el.getAttribute('data-i18n'),v=T(k);
-    if(el.tagName==='INPUT'||el.tagName==='BUTTON')el.textContent=v;
-    else el.innerHTML=v;
+    const canvas=el.querySelector('canvas.menu-pixel-icon');
+    if(canvas){
+      // Bouton avec icône pixelisée : ne pas écraser le canvas, mettre à jour seulement le texte
+      // Trouver ou créer le nœud texte après le canvas
+      let tn=canvas.nextSibling;
+      while(tn&&tn.nodeType!==3)tn=tn.nextSibling;
+      // Texte = version sans emoji du label (strip les chars non-ASCII de début)
+      const text=' '+v.replace(/^[\p{Emoji}\s▶◀⚙📊👤👥]+/u,'').trim();
+      if(tn)tn.textContent=text;
+    } else if(el.tagName==='INPUT'||el.tagName==='BUTTON'){
+      el.textContent=v;
+    } else {
+      el.innerHTML=v;
+    }
   });
   document.getElementById('lang-btn').textContent={'fr':'EN','en':'PA','pa':'HI','hi':'FR'}[lang]||'EN';
 }
