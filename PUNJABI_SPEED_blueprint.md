@@ -1,17 +1,19 @@
 # PUNJABI SPEED — Project Blueprint
-> Document de référence pour Claude Code · v2.0 · Mis à jour 2026-06-26
+> Document de référence pour Claude Code · v2.1 · Mis à jour 2026-06-27
 
 ---
 
 ## 1. Contexte et contraintes matérielles
 
 ### Plateforme cible
-- **Appareil** : Radio aftermarket Android (ex. Hyundai Accent 2012)
+- **Appareil** : Radio aftermarket Android HCN (ex. Hyundai Accent 2012)
 - **OS** : Android natif (pas Android Auto)
+- **Navigateur** : **Google Chrome 79 / V8 7.9** — vieux moteur, contrainte forte (voir §1bis)
 - **RAM** : 2 Go
 - **Écran** : Touchscreen intégré, résolution cible **1280×720** (fallback 1024×600)
 - **Entrée** : Écran tactile + manette USB (standard HID, ex. Xbox filaire)
-- **Distribution** : `index.html` + `menu-music.mp3` sur clé USB, chargé via WebView Android
+- **Distribution** : dossier `punjabi-speed/` sur clé USB / carte SD, chargé via Chrome (`file://`)
+- **Cible secondaire** : téléphones mobiles (paysage) — voir §1ter
 
 ### Contraintes techniques absolues
 - **Un seul fichier HTML** — zéro dépendance externe, zéro réseau requis au runtime
@@ -19,35 +21,83 @@
 - **Pas de WebGL** — Canvas 2D uniquement (compatibilité maximale, perf prévisible)
 - **Cible 30 fps stable** — priorité à la stabilité sur matériel faible
 - **Taille** : `index.html` ≈ 106 Ko · `menu-music.mp3` ≈ 2.1 Mo
-- **Pas de localStorage** — scores en mémoire session uniquement
+- **localStorage** : utilisé uniquement pour la **langue** (`gameLanguage`) ; les scores restent en mémoire session
 - **Gamepad API** (`navigator.getGamepads()`) pour la manette USB
 - JS pur — aucune librairie externe
 
 ### Fichiers à mettre sur la clé USB
 ```
 /
-├── index.html                              (120+ Ko — jeu complet)
-├── menu-music.mp3                          (2.1 Mo — Notize - Density Wave)
-└── sfx/Sound effects 1/                    (18 fichiers AAC .m4a, ~500 Ko)
-    ├── Throw object.m4a
-    ├── Boost.m4a
-    ├── Lap.m4a
-    ├── Wrong way.m4a
-    ├── Laughing.m4a
-    ├── First position (All).m4a
-    ├── Hit somebody (Mr Boogerman).m4a
-    ├── Hit somebody 3 (Boogerman).m4a
-    ├── Hit somebody (babypie).m4a
-    ├── Hit somebody 2 (Babypie).m4a
-    ├── hit somebody (Aashi).m4a
-    ├── Banana (Hanuman).m4a
-    ├── Got hit and slipping (babypie).m4a
-    ├── Got it (Hanuman).m4a
-    ├── First place (Hanuman).m4a
-    ├── Podium (Babypie).m4a
-    ├── Last position (Boogerman).m4a
-    └── Last position (Hanuman).m4a
+└── punjabi-speed/                          (tout le jeu dans un seul dossier)
+    ├── index.html                          (140+ Ko — jeu complet)
+    ├── manifest.json                       (PWA — installation sur écran d'accueil)
+    ├── service-worker.js                   (PWA — cache hors-ligne)
+    ├── menu-music.mp3                      (2.1 Mo — Notize - Density Wave)
+    └── sfx/Sound effects 1/                (18 fichiers AAC .m4a, ~500 Ko)
+        ├── Throw object.m4a
+        ├── Boost.m4a
+        ├── Lap.m4a
+        ├── Wrong way.m4a
+        ├── Laughing.m4a
+        ├── First position (All).m4a
+        ├── Hit somebody (Mr Boogerman).m4a
+        ├── Hit somebody 3 (Boogerman).m4a
+        ├── Hit somebody (babypie).m4a
+        ├── Hit somebody 2 (Babypie).m4a
+        ├── hit somebody (Aashi).m4a
+        ├── Banana (Hanuman).m4a
+        ├── Got hit and slipping (babypie).m4a
+        ├── Got it (Hanuman).m4a
+        ├── First place (Hanuman).m4a
+        ├── Podium (Babypie).m4a
+        ├── Last position (Boogerman).m4a
+        └── Last position (Hanuman).m4a
 ```
+
+---
+
+## 1bis. Compatibilité Chrome 79 (contrainte critique)
+
+La radio tourne sous **Chrome 79 (V8 7.9, fin 2019)**. Une seule erreur de parsing
+JS **ou** une propriété CSS inconnue qui casse le positionnement → **écran noir total**,
+sans message. Règles absolues :
+
+| Interdit (Chrome 80+) | Utiliser à la place |
+|---|---|
+| `??` (nullish coalescing) | `a != null ? a : b` |
+| `?.` (optional chaining) | `a && a.b` / `fn && fn()` |
+| CSS `inset:0` (Chrome 87) | `top:0;right:0;bottom:0;left:0` |
+| `aspect-ratio` (Chrome 88) | ratio via `vh`/`vw` (`max-width:177.78vh`) |
+| Flex `gap` (Chrome 84) | échoue en silence (cosmétique) — éviter si critique |
+
+**OK en Chrome 79** : `clamp()`/`min()`/`max()` (Chrome 79), variables CSS, `vmin`/`vw`/`vh`,
+`env(safe-area-inset-*)`, `calc()`, Gamepad API, Web Audio, `<audio>` AAC.
+
+> **Vérification avant déploiement** :
+> - `grep -cF "??" index.html` → doit donner **0**
+> - `grep -cF "inset:0" index.html` → doit donner **0**
+> - Parse : `node -e "new Function(require('fs').readFileSync('index.html','utf8').match(/<script>([\s\S]*?)<\/script>/)[1])"`
+
+---
+
+## 1ter. Support mobile (téléphones)
+
+Le jeu fonctionne aussi sur téléphone, **en paysage**.
+
+- **Cadrage auto** : `#frame` calcule la plus grande boîte 16:9 qui tient (`max-width:177.78vh`,
+  `max-height:56.25vw`), centrée. Le canvas 640×360 est mis à l'échelle en `width/height:100%`.
+  Les téléphones ~20:9 montrent des **bandes latérales** (pillarbox) — comportement normal.
+- **Verrouillage paysage** : `screen.orientation.lock('landscape')` tenté au chargement
+  (ignoré silencieusement si non supporté — fréquent hors PWA/plein écran).
+- **Invite de rotation** : `#rotate-prompt` (overlay plein écran animé 📱) s'affiche en portrait,
+  masqué en paysage via `@media (orientation:landscape)` + toggle JS sur `resize`/`orientationchange`.
+- **Boutons tactiles height-aware** : taille via `--tbtn:clamp(52px,18vmin,92px)` (vmin → tient
+  compte de la hauteur ; ~68px sur téléphone paysage, 92px sur la radio). Police dérivée de `--tbtn`.
+- **Encoche / safe-area** : `viewport-fit=cover` + `env(safe-area-inset-*)` sur `#stage`, les
+  boutons gauche/droite et le HUD d'item, des deux côtés.
+- **Menus courts** : `@media (max-height:430px)` compacte titre/sélection/réglages (logo réduit,
+  gaps serrés, scroll de secours) pour éviter le débordement vertical. N'affecte ni la radio
+  (720px) ni le bureau.
 
 ---
 
@@ -457,38 +507,48 @@ Barre semi-transparente en haut :
 ```
 
 ### Étapes de déploiement
-1. **Formater la clé USB** en FAT32 (Windows : clic-droit > Formater ; Mac : Utilitaire de disque)
-2. **Copier les fichiers** (`index.html`, `menu-music.mp3`, dossier `sfx/`) à la racine
-3. **Brancher la clé USB** à la radio Android
-4. **Ouvrir un navigateur** ou app WebView sur la radio
-5. **Charger le fichier local** : taper dans l'adresse barre :
+1. **Formater la clé USB / carte SD** en FAT32 (Windows : clic-droit > Formater ; Mac : Utilitaire de disque)
+2. **Copier le dossier `punjabi-speed/`** entier à la racine (garde tout le jeu regroupé)
+3. **Brancher la clé** à la radio Android
+4. **Ouvrir Chrome** sur la radio
+5. **Charger le fichier local** : taper dans la barre d'adresse :
    ```
-   file:///mnt/usb0/index.html
+   file:///mnt/usb0/punjabi-speed/index.html
    ```
-   (ou `/sdcard/usb_storage/index.html` selon le fabricant radio)
+   (ou `/sdcard/external_sd/punjabi-speed/index.html` selon le fabricant radio)
 6. **Tester** : La page doit charger avec la musique menu + tous les SFX AAC
 
 ### Variantes d'adresse (selon la radio)
-- **Hyundai/Kia aftermarket** : `file:///mnt/usb0/index.html`
-- **Sony/Alpine** : `file:///sdcard/usb/index.html`
-- **Android générique** : `file:///storage/emulated/0/DCIM/index.html` (si copié vers stockage interne)
+- **HCN / Hyundai-Kia aftermarket** : `file:///mnt/usb0/punjabi-speed/index.html`
+- **Carte SD** : `file:///sdcard/external_sd/punjabi-speed/index.html`
+- **Android générique** : `file:///storage/emulated/0/punjabi-speed/index.html` (stockage interne)
 
-> **Conseil** : Demander au support fabricant le chemin exact pour monter USB, ou essayer les 3 variantes.
+> **Conseil** : Mettre tout dans un dossier `punjabi-speed/` évite de mélanger avec les
+> autres fichiers de la carte (films, données Android). Renommer le dossier (ou ajouter `?2`
+> à l'URL) force aussi Chrome à ignorer le cache d'un ancien essai.
+
+> **Écran noir au chargement ?** → presque toujours une incompatibilité Chrome 79 (voir §1bis).
+> Vérifier `??`, `inset:0`, et le parsing du script.
 
 ### Résolution et layout
 - Le jeu s'adapte à tout ratio 16:9 via CSS (`max-width:177.78vh`)
-- Cible principale : **1280×720**
-- Fallback : **1024×600** (écrans plus petits)
-- Boutons tactiles positionnés pour usage au volant (bas d'écran, larges ≥80×80px)
+- Cible principale : **1280×720** · Fallback : **1024×600**
+- Téléphones : paysage, boutons height-aware, safe-area (voir §1ter)
+- Boutons tactiles positionnés pour usage au volant (bas d'écran, larges)
+
+### Installation en tant qu'app (PWA — optionnel)
+- `manifest.json` + `service-worker.js` permettent « Ajouter à l'écran d'accueil »
+  sur navigateurs récents → icône dédiée, plein écran, cache hors-ligne.
+- Sur Chrome 79 (radio) l'install PWA peut ne pas apparaître → le chargement `file://`
+  reste la méthode de référence (toujours fonctionnelle).
 
 ---
 
 ## 17. Ce qui reste hors scope
 
-- Sauvegarde des scores (pas de localStorage)
+- Sauvegarde des scores (localStorage utilisé uniquement pour la langue)
 - Multijoueur réseau
 - Ghost / mode chrono
 - Circuits supplémentaires (au-delà des 3 existants)
 - Personnalisation de kart (couleurs, etc.)
-- Mode plein écran forcé (géré par l'APK WebView)
-- PWA / service worker (pas nécessaire si chargé depuis clé USB)
+- APK natif (le chargement `file://` + PWA couvrent le besoin)
