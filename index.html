@@ -27,7 +27,11 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 .subtitle{margin-top:6px;font-size:clamp(9px,1.4vw,12px);color:#6a9bbf;letter-spacing:2px;opacity:.65;}
 .prompt{margin-top:34px;font-size:clamp(14px,3vw,26px);animation:blink 1s steps(2,start) infinite;}
 @keyframes blink{50%{opacity:0}}
-.hint{margin-top:26px;font-size:clamp(10px,1.8vw,14px);color:#88a;line-height:1.7;}
+.hint{margin-top:16px;font-size:clamp(10px,1.8vw,14px);color:#88a;line-height:1.7;}
+#tip-bar{margin-top:12px;font-size:clamp(11px,1.9vw,14px);color:#f5c842;background:rgba(0,0,0,.32);border:1px solid rgba(255,200,60,.25);border-radius:20px;padding:5px 16px;display:flex;align-items:center;gap:8px;min-height:28px;transition:opacity .4s;}
+#tip-bar.fade{opacity:0;}
+#tip-icon{font-size:1.3em;flex-shrink:0;}
+#tip-text{opacity:.9;}
 
 #screen-select{background:linear-gradient(180deg,#2a0a20 0%,#1a0814 100%);}
 .select-title{font-size:clamp(16px,3.5vw,30px);letter-spacing:3px;margin-bottom:14px;color:#FF8A1E;text-shadow:2px 2px 0 rgba(0,0,0,.45);}
@@ -221,7 +225,7 @@ input[type=range].pk-slider::-moz-range-thumb{width:20px;height:20px;border-radi
     <div class="logo"><span class="l1">PUNJABI</span> <span class="l2">SPEED</span></div>
     <div class="checker-strip"></div>
     <div class="title-tagline">MOREL &times; NAGPAL RACING</div>
-    <div class="subtitle">HOCHELAGA · KITCHENER · ÎLE NOTRE-DAME</div>
+    <div class="subtitle" id="game-desc" data-i18n="game_desc">Course de karts punjabi · 3 circuits · jusqu'à 2 joueurs</div>
     <div class="title-nav">
       <div class="player-select-row" id="player-select-row">
         <button class="player-btn active" id="btn-1p-title" data-players="1" data-i18n="players_1"><canvas class="menu-pixel-icon" data-emoji="👤" width="20" height="20"></canvas> 1 JOUEUR</button>
@@ -234,6 +238,7 @@ input[type=range].pk-slider::-moz-range-thumb{width:20px;height:20px;border-radi
       </div>
     </div>
     <div class="hint" data-i18n="hint">Menus : ← → choisir · Entrée valider<br>Course : ← → diriger · ↑ gaz · ↓ frein · Shift item</div>
+    <div id="tip-bar"><span id="tip-icon"></span><span id="tip-text"></span></div>
   </div>
 
   <div id="screen-select" class="screen">
@@ -424,7 +429,16 @@ let lang='fr';
 const STRINGS={
   fr:{
     press_play:'▶ JOUER',
+    game_desc:'Course de karts punjabi · 3 circuits · jusqu\'à 2 joueurs',
     hint:'Menus : ← → choisir · Entrée valider<br>Course : ← → diriger · ↑ gaz · ↓ frein · Shift item',
+    tips:[
+      ['🩴','CHAPPAL — Une sandale bien lancée étourdit l\'adversaire !'],
+      ['🥄','CUILLÈRE EN BOIS — La cuillère de mamie fait mal, même en kart.'],
+      ['🧅','OIGNON — Projectile à guidage automatique. Les larmes viennent après.'],
+      ['🫓','DOSA — Posée au sol, elle fait glisser comme une patinoire.'],
+      ['🌶️','CHILI — Avale-le pour un boost de vitesse brûlant !'],
+      ['🍿','KURKURE — Tire 5 éclats en éventail ET te protège 2 secondes.'],
+    ],
     choose_pilot:'CHOISIS TON PILOTE', choose_circuit:'CHOISIS TON CIRCUIT',
     next:'SUIVANT ▶', go:'DÉPART ▶', replay:'REJOUER', menu:'MENU',
     pause:'PAUSE', resume:'▶ REPRENDRE', restart:'↺ RECOMMENCER', main_menu:'⌂ MENU PRINCIPAL',
@@ -447,7 +461,16 @@ const STRINGS={
   },
   en:{
     press_play:'▶ PLAY',
+    game_desc:'Punjabi kart racing · 3 circuits · up to 2 players',
     hint:'Menus : ← → select · Enter confirm<br>Race : ← → steer · ↑ gas · ↓ brake · Shift item',
+    tips:[
+      ['🩴','CHAPPAL — A well-thrown sandal stuns your opponent!'],
+      ['🥄','WOODEN SPOON — Grandma\'s spoon hurts, even in a kart.'],
+      ['🧅','ONION — Heat-seeking projectile. Tears come after.'],
+      ['🫓','DOSA — Dropped behind you, makes enemies slip like ice.'],
+      ['🌶️','CHILI — Eat one for a burning speed boost!'],
+      ['🍿','KURKURE — Fires 5 shards in a spread AND shields you for 2s.'],
+    ],
     choose_pilot:'CHOOSE YOUR DRIVER', choose_circuit:'CHOOSE YOUR CIRCUIT',
     next:'NEXT ▶', go:'START ▶', replay:'REPLAY', menu:'MENU',
     pause:'PAUSE', resume:'▶ RESUME', restart:'↺ RESTART', main_menu:'⌂ MAIN MENU',
@@ -470,7 +493,16 @@ const STRINGS={
   },
   pa:{
     press_play:'▶ ਖੇਡੋ',
+    game_desc:'ਪੰਜਾਬੀ ਕਾਰਟ ਰੇਸਿੰਗ · 3 ਟ੍ਰੈਕ · 2 ਖਿਡਾਰੀ ਤੱਕ',
     hint:'ਮੇਨੂ : ← → ਚੁਣੋ · Enter ਪੁਸ਼ਟੀ ਕਰੋ<br>ਰੇਸ : ← → ਸਟੀਅਰ · ↑ ਗੈਸ · ↓ ਬ੍ਰੇਕ · Shift ਆਈਟਮ',
+    tips:[
+      ['🩴','ਚੱਪਲ — ਸੁੱਟੀ ਹੋਈ ਚੱਪਲ ਦੁਸ਼ਮਣ ਨੂੰ ਰੋਕਦੀ ਹੈ!'],
+      ['🥄','ਲੱਕੜ ਦੀ ਕੜਛੀ — ਮਾਂ ਦੀ ਕੜਛੀ ਕਾਰਟ ਵਿੱਚ ਵੀ ਦਰਦ ਦਿੰਦੀ ਹੈ।'],
+      ['🧅','ਪਿਆਜ਼ — ਆਪੇ ਦੁਸ਼ਮਣ ਲੱਭਦਾ ਹੈ। ਹੰਝੂ ਬਾਅਦ ਵਿੱਚ ਆਉਂਦੇ ਹਨ।'],
+      ['🫓','ਦੋਸਾ — ਜ਼ਮੀਨ ਤੇ ਸੁੱਟੋ, ਦੁਸ਼ਮਣ ਫਿਸਲ ਜਾਣਗੇ!'],
+      ['🌶️','ਮਿਰਚ — ਖਾਓ ਅਤੇ ਤੇਜ਼ ਦੌੜੋ!'],
+      ['🍿','ਕੁਰਕੁਰੇ — 5 ਟੁਕੜੇ ਸੁੱਟੋ ਅਤੇ 2 ਸਕਿੰਟ ਸੁਰੱਖਿਅਤ ਰਹੋ।'],
+    ],
     choose_pilot:'ਆਪਣੇ ਡਰਾਈਵਰ ਚੁਣੋ', choose_circuit:'ਆਪਣਾ ਸਰਕਟ ਚੁਣੋ',
     next:'ਅਗਲਾ ▶', go:'ਸ਼ੁਰੂ ▶', replay:'ਮੁੜ ਖੇਡੋ', menu:'ਮੇਨੂ',
     pause:'ਰੁਕਣਾ', resume:'▶ ਜਾਰੀ ਰਖੋ', restart:'↺ ਮੁੜ ਸ਼ੁਰੂ ਕਰੋ', main_menu:'⌂ ਮੁੱਖ ਮੇਨੂ',
@@ -493,7 +525,16 @@ const STRINGS={
   },
   hi:{
     press_play:'▶ खेलो',
+    game_desc:'पंजाबी कार्ट रेसिंग · 3 ट्रैक · 2 खिलाड़ियों तक',
     hint:'मेनू : ← → चुनो · Enter पुष्टि करो<br>दौड़ : ← → स्टीयर · ↑ गैस · ↓ ब्रेक · Shift आइटम',
+    tips:[
+      ['🩴','चप्पल — अच्छी तरह फेंकी चप्पल दुश्मन को रोक देती है!'],
+      ['🥄','लकड़ी का चम्मच — अम्मा का चम्मच कार्ट में भी दर्द देता है।'],
+      ['🧅','प्याज़ — खुद दुश्मन ढूंढता है। आँसू बाद में आते हैं।'],
+      ['🫓','डोसा — पीछे गिराओ, दुश्मन फिसल जाएगा!'],
+      ['🌶️','मिर्च — खाओ और तेज़ दौड़ो!'],
+      ['🍿','कुरकुरे — 5 टुकड़े फेंको और 2 सेकंड सुरक्षित रहो।'],
+    ],
     choose_pilot:'अपना चालक चुनो', choose_circuit:'अपना सर्किट चुनो',
     next:'अगला ▶', go:'शुरू करो ▶', replay:'फिर से खेलो', menu:'मेनू',
     pause:'रुको', resume:'▶ जारी रखो', restart:'↺ फिर से शुरू करो', main_menu:'⌂ मुख्य मेनू',
@@ -536,14 +577,39 @@ function updateTexts(){
   });
   document.getElementById('lang-btn').textContent={'fr':'EN','en':'PA','pa':'HI','hi':'FR'}[lang]||'EN';
 }
-function setLang(l){lang=l;updateTexts();}
+function setLang(l){lang=l;updateTexts();showTip();}
 // Cycle through all languages
 function cycleLang(){
   const langs=['fr','en','pa','hi'];
   const idx=langs.indexOf(lang);
   lang=langs[(idx+1)%langs.length];
-  updateTexts();
+  updateTexts();showTip();
 }
+
+// Rotating item tips on title screen
+let _tipIdx=0,_tipTimer=null;
+function showTip(idx){
+  const tips=(STRINGS[lang]||STRINGS.fr).tips;
+  if(!tips)return;
+  if(idx===undefined)idx=_tipIdx;
+  _tipIdx=((idx%tips.length)+tips.length)%tips.length;
+  const bar=document.getElementById('tip-bar');
+  const iconEl=document.getElementById('tip-icon');
+  const textEl=document.getElementById('tip-text');
+  if(!bar)return;
+  bar.classList.add('fade');
+  setTimeout(()=>{
+    iconEl.textContent=tips[_tipIdx][0];
+    textEl.textContent=tips[_tipIdx][1];
+    bar.classList.remove('fade');
+  },400);
+}
+function startTipRotation(){
+  showTip(0);
+  if(_tipTimer)clearInterval(_tipTimer);
+  _tipTimer=setInterval(()=>{showTip(_tipIdx+1);},4000);
+}
+function stopTipRotation(){if(_tipTimer){clearInterval(_tipTimer);_tipTimer=null;}}
 
 function hexToRgb(h){h=h.replace('#','');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
 function packRGB(r,g,b){return((255<<24)|(b<<16)|(g<<8)|r)>>>0;}
@@ -1599,7 +1665,8 @@ function showScreen(id){
   document.getElementById('lang-btn').style.display=inGame?'none':'';
   document.getElementById('home-btn').style.display=(inGame||onTitle)?'none':'inline-block';
   document.getElementById('ingame-menu-btn').style.display=inGame?'block':'none';
-  resetMenuFocus(); // focus par défaut + neutraliser les boutons maintenus
+  if(onTitle)startTipRotation(); else stopTipRotation();
+  resetMenuFocus();
 }
 
 /* ====================================================================
@@ -2196,6 +2263,7 @@ function pauseToMenu(){
 
 function init(){
   setupTrack(TRACKS[0]);
+  startTipRotation();
   // Icônes pixelisées des boutons du menu
   document.querySelectorAll('.menu-pixel-icon').forEach(cv=>{
     const emoji=cv.dataset.emoji;if(!emoji)return;
