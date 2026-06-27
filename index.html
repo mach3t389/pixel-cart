@@ -701,6 +701,8 @@ const TRACKS=[
     id:0, name:"HOCHELAGA", subtitle:"Montréal, Québec", previewColor:"#E24B4A",
     desc:"Grande droite · Épingle · Chicane en S",
     descEn:"Long straight · Hairpin · S-chicane",
+    descPa:"ਲੰਬਾ ਸਿੱਧਾ · ਹੇਅਰਪਿਨ · S-ਮੋੜ",
+    descHi:"लंबी सीधी सड़क · हेयरपिन · S-टर्न",
     // 11 pts — grande droite S/F (690u), épingle serrée à l'ouest,
     // traversée haute avec S (gauche+droite), retour est avec courbes.
     // Sens: anti-horaire → virages D à l'épingle + E est ; virages G au S chicane
@@ -739,6 +741,8 @@ const TRACKS=[
     id:1, name:"KITCHENER", subtitle:"Ontario, Canada", previewColor:"#1D9E75",
     desc:"Épingle gauche · Longue droite · Courbes",
     descEn:"Left hairpin · Long straight · Curves",
+    descPa:"ਖੱਬੇ ਹੇਅਰਪਿਨ · ਲੰਬੀ ਸਿੱਧੀ ਸੜਕ · ਮੋੜ",
+    descHi:"बाएं हेयरपिन · लंबी सीधी सड़क · मोड़",
     // 10 pts bien espacés (min ~155u) — épingle T7 à gauche, longue droite en haut
     // Distances: 233,245,201,204,234,207,253,286,166,153
     controlPoints:[
@@ -774,6 +778,8 @@ const TRACKS=[
     id:2, name:"ÎLE NOTRE-DAME", subtitle:"Montréal, Québec", previewColor:"#378ADD",
     desc:"Virage Senna · L'Épingle · Casino",
     descEn:"Senna Corner · The Hairpin · Casino",
+    descPa:"ਸੇਨਾ ਮੋੜ · ਹੇਅਰਪਿਨ · ਕੈਸੀਨੋ",
+    descHi:"सेना कोना · हेयरपिन · कैसीनो",
     // 12 pts — forme distinctive Gilles Villeneuve
     // Casino Straight (longue droite en haut), Virage Senna (épingle droite),
     // chicane rapide droite, long arc bas, L'Épingle (U-turn gauche)
@@ -1715,11 +1721,11 @@ function drawHUD(){
     itemCorner.classList.add('active');
     drawPixelIcon(hudIc,p.item);hItem.style.display='';
   }else if(p.starTime>0){
-    drawPixelIcon(_icC,'KURKURE');icLabel.textContent='KURKURE';
+    drawPixelIcon(_icC,'KURKURE');icLabel.textContent=ITEM_INFO['KURKURE'].label;
     itemCorner.classList.add('active');
     drawPixelIcon(hudIc,'KURKURE');hItem.style.display='';
   }else if(p.boostTime>0){
-    drawPixelIcon(_icC,'CHILI');icLabel.textContent='CHILI';
+    drawPixelIcon(_icC,'CHILI');icLabel.textContent=ITEM_INFO['CHILI'].label;
     itemCorner.classList.add('active');
     drawPixelIcon(hudIc,'CHILI');hItem.style.display='';
   }else{
@@ -1935,8 +1941,9 @@ function initCharSelect(){
   // Titre dynamique
   const titleEl=document.querySelector('#screen-select .select-title');
   if(titleEl){
-    if(game.splitScreen)titleEl.textContent=(_selectingP===2?'👥 P2 — ':'👤 P1 — ')+'CHOISIS TON PILOTE';
-    else titleEl.textContent='CHOISIS TON PILOTE';
+    const baseTitle=T('choose_pilot');
+    if(game.splitScreen)titleEl.textContent=(_selectingP===2?'👥 P2 — ':'👤 P1 — ')+baseTitle;
+    else titleEl.textContent=baseTitle;
   }
   document.getElementById('start-sel-btn').disabled=(current<0);
 }
@@ -1972,7 +1979,10 @@ function initTrackSelect(){
     const cv=document.createElement('canvas');cv.width=120;cv.height=90;drawTrackMinimap(cv.getContext('2d'),tr,120,90);card.appendChild(cv);
     const nm=document.createElement('div');nm.className='tname';nm.textContent=tr.name;nm.style.color=tr.previewColor;card.appendChild(nm);
     const loc=document.createElement('div');loc.className='tloc';loc.textContent=tr.subtitle;card.appendChild(loc);
-    const desc=document.createElement('div');desc.className='tdesc';desc.textContent=(lang==='en'&&tr.descEn)?tr.descEn:tr.desc;card.appendChild(desc);
+    const desc=document.createElement('div');desc.className='tdesc';
+    const descKey='desc'+(lang==='en'?'En':lang==='pa'?'Pa':lang==='hi'?'Hi':'');
+    desc.textContent=tr[descKey]||tr.desc;
+    card.appendChild(desc);
     card.addEventListener('click',()=>{selectedTrackIdx=i;initTrackSelect();AUDIO.init();AUDIO.resume();AUDIO.beep(660,.06,.1);});
     row.appendChild(card);
   });
