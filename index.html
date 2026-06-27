@@ -429,7 +429,18 @@ function saveStats(){try{localStorage.setItem(STATS_KEY,JSON.stringify(STATS));}
 function resetStats(){STATS=defaultStats();saveStats();}
 
 /* ----- LANGUE ----- */
-let lang='fr';
+function detectBrowserLanguage(){
+  // Check localStorage first
+  try{const saved=localStorage.getItem('gameLanguage'); if(saved&&['fr','en','pa','hi'].includes(saved))return saved;}catch(e){}
+  // Detect from browser/OS language
+  const browserLang=(navigator.language||navigator.userLanguage||'fr').toLowerCase();
+  if(browserLang.startsWith('fr'))return 'fr';
+  if(browserLang.startsWith('en'))return 'en';
+  if(browserLang.startsWith('pa')||browserLang.startsWith('gu')||browserLang.startsWith('pun'))return 'pa'; // Punjabi variants
+  if(browserLang.startsWith('hi'))return 'hi';
+  return 'fr'; // Default fallback
+}
+let lang=detectBrowserLanguage();
 const STRINGS={
   fr:{
     press_play:'▶ JOUER',
@@ -589,12 +600,13 @@ function updateTexts(){
   });
   document.getElementById('lang-btn').textContent={'fr':'EN','en':'PA','pa':'HI','hi':'FR'}[lang]||'EN';
 }
-function setLang(l){lang=l;updateTexts();showTip();}
+function setLang(l){lang=l;try{localStorage.setItem('gameLanguage',l);}catch(e){}updateTexts();showTip();}
 // Cycle through all languages
 function cycleLang(){
   const langs=['fr','en','pa','hi'];
   const idx=langs.indexOf(lang);
   lang=langs[(idx+1)%langs.length];
+  try{localStorage.setItem('gameLanguage',lang);}catch(e){}
   updateTexts();showTip();
 }
 
