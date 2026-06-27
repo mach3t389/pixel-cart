@@ -25,6 +25,7 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 /* Bande à damier façon course */
 .checker-strip{height:13px;width:clamp(200px,40vw,340px);margin:10px auto 0;background:repeating-conic-gradient(#1a1a1a 0% 25%,#fff 0% 50%);background-size:13px 13px;border-radius:3px;box-shadow:0 0 0 2px rgba(0,0,0,.3);opacity:.92;}
 .subtitle{margin-top:6px;font-size:clamp(9px,1.4vw,12px);color:#6a9bbf;letter-spacing:2px;opacity:.65;}
+#game-desc{margin-top:10px;font-size:clamp(12px,1.9vw,15px);color:#FFE2B0;letter-spacing:.5px;opacity:1;line-height:1.5;max-width:clamp(260px,82vw,440px);margin-left:auto;margin-right:auto;text-shadow:1px 1px 2px rgba(0,0,0,.65);}
 .prompt{margin-top:34px;font-size:clamp(14px,3vw,26px);animation:blink 1s steps(2,start) infinite;}
 @keyframes blink{50%{opacity:0}}
 .settings-controls-title{margin-top:18px;font-size:clamp(11px,1.8vw,14px);letter-spacing:2px;color:#f5c842;font-weight:700;opacity:.85;}
@@ -220,7 +221,7 @@ input[type=range].pk-slider::-moz-range-thumb{width:20px;height:20px;border-radi
     <div class="logo"><span class="l1">PUNJABI</span> <span class="l2">SPEED</span></div>
     <div class="checker-strip"></div>
     <div class="title-tagline">MOREL &times; NAGPAL RACING</div>
-    <div class="subtitle" id="game-desc" data-i18n="game_desc">Course de karts punjabi · 3 circuits · jusqu'à 2 joueurs</div>
+    <div class="subtitle" id="game-desc" data-i18n="game_desc">Fonce dans une course de karts punjabi sur 3 circuits, jusqu'à 2 joueurs !</div>
     <div class="title-nav">
       <div class="player-select-row" id="player-select-row">
         <button class="player-btn active" id="btn-1p-title" data-players="1" data-i18n="players_1"><canvas class="menu-pixel-icon" data-emoji="👤" width="32" height="32"></canvas> 1 JOUEUR</button>
@@ -432,7 +433,7 @@ let lang='fr';
 const STRINGS={
   fr:{
     press_play:'▶ JOUER',
-    game_desc:'Course de karts punjabi · 3 circuits · jusqu\'à 2 joueurs',
+    game_desc:'Fonce dans une course de karts punjabi sur 3 circuits, jusqu\'à 2 joueurs !',
     hint:'Menus : ← → choisir · Entrée valider<br>Course : ← → diriger · ↑ gaz · ↓ frein · Shift item',
     tips:[
       ['🩴','CHAPPAL — Une sandale bien lancée étourdit l\'adversaire !'],
@@ -466,7 +467,7 @@ const STRINGS={
   },
   en:{
     press_play:'▶ PLAY',
-    game_desc:'Punjabi kart racing · 3 circuits · up to 2 players',
+    game_desc:'Race Punjabi-style karts across 3 circuits, for up to 2 players!',
     hint:'Menus : ← → select · Enter confirm<br>Race : ← → steer · ↑ gas · ↓ brake · Shift item',
     tips:[
       ['🩴','CHAPPAL — A well-thrown sandal stuns your opponent!'],
@@ -500,7 +501,7 @@ const STRINGS={
   },
   pa:{
     press_play:'▶ ਖੇਡੋ',
-    game_desc:'ਪੰਜਾਬੀ ਕਾਰਟ ਰੇਸਿੰਗ · 3 ਟ੍ਰੈਕ · 2 ਖਿਡਾਰੀ ਤੱਕ',
+    game_desc:'3 ਸਰਕਟਾਂ \'ਤੇ ਪੰਜਾਬੀ ਅੰਦਾਜ਼ ਵਿੱਚ ਕਾਰਟ ਦੌੜ, 2 ਖਿਡਾਰੀਆਂ ਤੱਕ!',
     hint:'ਮੇਨੂ : ← → ਚੁਣੋ · Enter ਪੁਸ਼ਟੀ ਕਰੋ<br>ਰੇਸ : ← → ਸਟੀਅਰ · ↑ ਗੈਸ · ↓ ਬ੍ਰੇਕ · Shift ਆਈਟਮ',
     tips:[
       ['🩴','ਚੱਪਲ — ਸੁੱਟੀ ਹੋਈ ਚੱਪਲ ਦੁਸ਼ਮਣ ਨੂੰ ਰੋਕਦੀ ਹੈ!'],
@@ -534,7 +535,7 @@ const STRINGS={
   },
   hi:{
     press_play:'▶ खेलो',
-    game_desc:'पंजाबी कार्ट रेसिंग · 3 ट्रैक · 2 खिलाड़ियों तक',
+    game_desc:'3 सर्किट पर पंजाबी अंदाज़ में कार्ट दौड़, 2 खिलाड़ियों तक!',
     hint:'मेनू : ← → चुनो · Enter पुष्टि करो<br>दौड़ : ← → स्टीयर · ↑ गैस · ↓ ब्रेक · Shift आइटम',
     tips:[
       ['🩴','चप्पल — अच्छी तरह फेंकी चप्पल दुश्मन को रोक देती है!'],
