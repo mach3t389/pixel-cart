@@ -213,6 +213,38 @@ input[type=range].pk-slider::-moz-range-thumb{width:20px;height:20px;border-radi
 </style>
 </head>
 <body>
+<!-- ===== On-screen diagnostics (ES5-safe, separate <script> so it catches
+         parse errors in the main game script below). Shows any JS error as
+         readable text instead of a black screen, plus a build stamp so we can
+         confirm the card has the fixed file. Safe to leave in. ===== -->
+<div id="build-stamp" style="position:fixed;left:6px;bottom:5px;z-index:99998;font:12px/1.2 monospace;color:#5fe08a;background:rgba(0,0,0,.55);padding:3px 7px;border-radius:5px;pointer-events:none;">build: fix-2 ✓</div>
+<div id="err-overlay" style="display:none;position:fixed;inset:0;z-index:99999;background:#1a0000;color:#ffd2d2;font:14px/1.5 monospace;padding:18px;overflow:auto;white-space:pre-wrap;word-break:break-word;"></div>
+<script>
+(function(){
+  function show(msg){
+    var o=document.getElementById('err-overlay');
+    if(!o) return;
+    o.style.display='block';
+    o.textContent=(o.textContent? o.textContent+'\n\n' : 'PUNJABI SPEED — error caught:\n\n')+msg;
+  }
+  window.onerror=function(message,source,line,col,error){
+    var s=String(message);
+    if(source){ s+='\n  file: '+source; }
+    if(line){ s+='\n  line: '+line+(col?(':'+col):''); }
+    if(error&&error.stack){ s+='\n  '+String(error.stack).split('\n').slice(0,4).join('\n  '); }
+    show(s);
+    return false;
+  };
+  window.addEventListener('error',function(e){
+    if(e&&e.target&&e.target!==window&&(e.target.src||e.target.href)){
+      show('Failed to load resource:\n  '+(e.target.src||e.target.href));
+    }
+  },true);
+  window.addEventListener('unhandledrejection',function(e){
+    show('Unhandled promise rejection:\n  '+(e&&e.reason?String(e.reason):'unknown'));
+  });
+})();
+</script>
 <div id="stage"><div id="frame">
   <canvas id="game-canvas" width="640" height="360"></canvas>
   <audio id="menu-music" src="menu-music.mp3" loop preload="none"></audio>
