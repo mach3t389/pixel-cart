@@ -1091,17 +1091,17 @@ function drawProjectile(ctx,cx,baseY,scale,type){
   ctx.imageSmoothingEnabled=true;
 }
 
-// Banane posée au sol — bien visible avec contour
-// Banane posée au sol — même style emoji pixelisé
-function drawBanana(ctx,cx,baseY,scale){
+// Item posé au sol — emoji pixelisé nearest-neighbor (DOSA et futurs items au sol)
+function drawDroppedItem(ctx,cx,baseY,scale,type){
   if(scale<0.15)return;
+  const info=ITEM_INFO[type];
+  const icon=info?info.icon:'🫓';
   const sz=Math.max(8,Math.round(scale*18));
   const src=Math.max(4,Math.round(sz/4));
-  const px=_buildPixelEmoji('🍌',src,sz);
+  const px=_buildPixelEmoji(icon,src,sz);
   ctx.fillStyle="rgba(0,0,0,0.35)";
   ctx.beginPath();ctx.ellipse(cx,baseY-1,sz*0.5,sz*0.18,0,0,Math.PI*2);ctx.fill();
   ctx.imageSmoothingEnabled=false;
-  // Posée au sol : bas du sprite sur le point de contact baseY
   ctx.drawImage(px,(cx-sz/2)|0,(baseY-sz*0.9)|0,sz,sz);
   ctx.imageSmoothingEnabled=true;
 }
@@ -2052,7 +2052,7 @@ function drawBillboards(list){
     } else if(b.kind==='proj'){
       drawProjectile(ctx,b.screenX,b.baseY,b.scale,b.proj.type);
     } else if(b.kind==='dropped'){
-      drawBanana(ctx,b.screenX,b.baseY,b.scale*2.8);
+      drawDroppedItem(ctx,b.screenX,b.baseY,b.scale*2.8,b.item.type);
     }
   }
 }

@@ -187,27 +187,34 @@ Tous définis par des **splines Catmull-Rom** sur une grille monde 1000×1000. T
 
 ## 8. Système d'items
 
-6 types d'items. Récupérés sur des boîtes `?` placées sur la piste. Affichage en icônes emoji pixelisées (nearest-neighbor scaling).
+6 types d'items 100% Punjab. Récupérés sur des boîtes `?` placées sur la piste. **Tous les visuels sont rendus en emoji pixelisé nearest-neighbor** — inventaire HUD, icône centre-écran, projectile en vol, item posé au sol.
 
-| Clé | Emoji | Type | Effet |
-|-----|-------|------|-------|
-| FUSIL | 🔫 | Projectile avant | Rapide, tir direct |
-| COUTEAU | 🔪 | Projectile avant | Moyen, rebondit |
-| POULET | 🐔 | Projectile avant | Lent, rebondit longtemps |
-| BANANE | 🍌 | Posé derrière | Glisse les adversaires |
-| TURBO | ⚡ | Effet immédiat | Boost de vitesse |
-| ETOILE | ⭐ | Effet temporaire | Invincibilité + écrase les adversaires |
+| Clé | Emoji | Type | Effet | Stun (frames) |
+|-----|-------|------|-------|--------------|
+| CHAPPAL | 🩴 | Projectile avant rapide | Sandale homing, vitesse 9.5 | 60 |
+| CUILLERE | 🥄 | Projectile avant | Cuillère en bois, vitesse 6.0 | 42 |
+| OIGNON | 🧅 | Projectile homing + rebond | Cherche l'ennemi, rebondit 4× hors-piste, bloqué par une DOSA | 70 |
+| DOSA | 🫓 | Posé derrière | Glisse les adversaires (comme une banane graisseuse) | 48 |
+| CHILI | 🌶️ | Effet immédiat | Boost de vitesse (boostTime=200) | — |
+| KURKURE | 🍿 | Scatter + bouclier | Lance 5 morceaux en cône avant + 2s de protection croustillante (starTime=120) | 35 |
 
 ### Système d'icônes pixelisées (`_buildPixelEmoji`)
 1. Rend l'emoji à petite taille (`srcPx ≈ sz/4`)
 2. Scale up en `imageSmoothingEnabled=false` → pixels carrés visibles
-3. Utilisé partout de façon cohérente : inventaire HUD, icône centre-écran, rendu 3D sur piste
+3. **Utilisé partout de façon cohérente** :
+   - Inventaire HUD → `drawPixelIcon(canvas, type)`
+   - Icône centre-écran → `drawPixelIcon(_icC, type)`
+   - Projectile en vol 3D → `drawProjectile()` → `_buildPixelEmoji(info.icon, src, sz)`
+   - Item posé au sol 3D → `drawDroppedItem()` → `_buildPixelEmoji(info.icon, src, sz)`
+   - Boutons du menu → canvas `data-emoji` initialisés au démarrage
 
-### Comportement ÉTOILE
-Kart invincible pendant `starTime > 0` :
-- Perce à travers les autres karts
-- Étourdit (`stunKart`) toute victime touchée
-- Le timer continue même pendant un stun
+> **Règle absolue** : tout nouvel item doit passer par `_buildPixelEmoji`. Ne jamais utiliser `fillText` emoji directement sur le canvas de jeu — ça briserait la cohérence pixel art.
+
+### Comportement KURKURE (remplace l'étoile)
+Kart protégé pendant `starTime > 0` (120 frames ≈ 2s) :
+- Perce à travers les autres karts et les étourdit (`stunKart`)
+- Lance simultanément 5 projectiles KURKURE en cône (angles : -0.45, -0.22, 0, +0.22, +0.45 rad)
+- Effet visuel `#star-fx` actif pendant la protection
 
 ---
 
