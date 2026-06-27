@@ -559,15 +559,15 @@ const CHARACTERS=[
 function kartPalette(ch){return{1:ch.color,2:ch.colorDark,3:ch.colorLight,4:"#161616",5:"#e8b187",6:"#20242b"};}
 
 /* ----- ITEMS ----- */
-// Cinq types : projectile (FUSIL, COUTEAU, POULET), défensif (BANANE), boost (TURBO)
-const ITEM_LIST=['FUSIL','COUTEAU','POULET','BANANE','TURBO','ETOILE'];
+// Items 100% Punjab : CHAPPAL, CUILLERE, OIGNON, DOSA, CHILI, KURKURE
+const ITEM_LIST=['CHAPPAL','CUILLERE','OIGNON','DOSA','CHILI','KURKURE'];
 const ITEM_INFO={
-  FUSIL:  {label:"FUSIL",   icon:"🔫", color:"#aaaaaa",color2:"#555",projectile:true,  fwd:true,  speed:9.0, life:200},
-  COUTEAU:{label:"COUTEAU", icon:"🔪", color:"#d0d0d0",color2:"#888",projectile:true,  fwd:true,  speed:6.0, life:280},
-  POULET: {label:"POULET",  icon:"🐔", color:"#f5d060",color2:"#c8a0","projectile":true,fwd:true,  speed:4.5, life:340, bounce:true},
-  BANANE: {label:"BANANE",  icon:"🍌", color:"#F4D03F",color2:"#b89000",projectile:false,fwd:false, speed:0,   life:600},
-  TURBO:  {label:"TURBO",   icon:"⚡", color:"#00ccff",color2:"#0055aa",projectile:false,fwd:false, speed:0,   life:0},
-  ETOILE: {label:"ÉTOILE",  icon:"⭐", color:"#ffe566",color2:"#c8a000",projectile:false,fwd:false, speed:0,   life:0},
+  CHAPPAL: {label:"CHAPPAL",  icon:"🩴", color:"#c8860a",color2:"#7a4d00",projectile:true, fwd:true, speed:9.5, life:200},
+  CUILLERE:{label:"CUILLÈRE", icon:"🥄", color:"#d0c8a0",color2:"#8a7840",projectile:true, fwd:true, speed:6.0, life:280},
+  OIGNON:  {label:"OIGNON",   icon:"🧅", color:"#d4a0e0",color2:"#7a4890",projectile:true, fwd:true, speed:4.0, life:360, bounce:true},
+  DOSA:    {label:"DOSA",     icon:"🫓", color:"#d4a020",color2:"#907000",projectile:false,fwd:false,speed:0,   life:700},
+  CHILI:   {label:"CHILI",    icon:"🌶️", color:"#ff4422",color2:"#aa1100",projectile:false,fwd:false,speed:0,   life:0},
+  KURKURE: {label:"KURKURE",  icon:"🍿", color:"#ff8800",color2:"#cc4400",projectile:true, fwd:true, speed:7.0, life:160},
 };
 const ITEM_RESPAWN=600;
 // Icônes : emoji rendu petit puis agrandi nearest-neighbor = "pixelisé"
@@ -588,7 +588,7 @@ function _buildPixelEmoji(emoji,srcPx,dstPx){
   return(_emojiCache[key]=out);
 }
 function drawPixelIcon(canvasEl,type){
-  // type = clé ITEM_INFO (FUSIL…) ou clé DIFF_ICONS (LEAF…)
+  // type = clé ITEM_INFO (CHAPPAL…) ou clé DIFF_ICONS (LEAF…)
   const emoji=(ITEM_INFO[type]?.icon)||(DIFF_ICONS[type]);
   if(!emoji||!canvasEl)return;
   const sz=canvasEl.width;
@@ -1296,32 +1296,39 @@ function useItem(k){
   if(!k.item||k.stunTime>0)return;
   const type=k.item, info=ITEM_INFO[type];
   k.item=null;
-  if(type==='TURBO'){
-    k.boostTime=180;
-    AUDIO.beep(1200,.18,.18,k.x,k.y);
-    if(k.isPlayer)showNotif(" TURBO!",700,'TURBO');
+  if(type==='CHILI'){
+    k.boostTime=200;
+    AUDIO.beep(1400,.06,.18,k.x,k.y);setTimeout(()=>AUDIO.beep(1600,.06,.16,k.x,k.y),60);setTimeout(()=>AUDIO.beep(1900,.12,.18,k.x,k.y),130);
+    if(k.isPlayer)showNotif("🌶️ CHILI!",700,'CHILI');
     return;
   }
-  if(type==='ETOILE'){
-    k.starTime=360; // ~6 secondes à 60fps
-    k.boostTime=Math.max(k.boostTime,120); // petit boost de vitesse aussi
-    AUDIO.beep(1400,.05,.15,k.x,k.y);setTimeout(()=>AUDIO.beep(1600,.05,.14,k.x,k.y),80);setTimeout(()=>AUDIO.beep(1800,.05,.13,k.x,k.y),160);setTimeout(()=>AUDIO.beep(2000,.12,.18,k.x,k.y),240);
-    if(k.isPlayer){showNotif(" INVINCIBLE!",900,'ETOILE');document.getElementById('star-fx').classList.add('active');}
+  if(type==='KURKURE'){
+    // Scatter : 5 morceaux en cône avant + mini invincibilité croustillante
+    k.starTime=120; // 2s de protection Kurkure
+    if(k.isPlayer){showNotif("🍿 KURKURE!",900,'KURKURE');document.getElementById('star-fx').classList.add('active');}
+    const angles=[-0.45,-0.22,0,0.22,0.45];
+    const px=k.x+Math.cos(k.angle)*20, py=k.y+Math.sin(k.angle)*20;
+    for(const da of angles){
+      game.projectiles.push({x:px,y:py,angle:k.angle+da,speed:info.speed,type:'KURKURE',ownerId:k.char.id,life:info.life,bounceCount:0});
+    }
+    AUDIO.beep(900,.05,.14,k.x,k.y);setTimeout(()=>AUDIO.beep(1100,.05,.12,k.x,k.y),40);setTimeout(()=>AUDIO.beep(1300,.08,.14,k.x,k.y),90);
     return;
   }
-  if(type==='BANANE'){
-    // Déposer derrière le kart
+  if(type==='DOSA'){
+    // Déposer derrière le kart (glissant comme une banane graisseuse)
     const bx=k.x-Math.cos(k.angle)*28, by=k.y-Math.sin(k.angle)*28;
-    game.droppedItems.push({x:bx,y:by,type:'BANANE',life:900,ownerId:k.char.id});
-    AUDIO.beep(440,.12,.12,k.x,k.y);
-    if(k.isPlayer)showNotif(" BANANE!",600,'BANANE');
+    game.droppedItems.push({x:bx,y:by,type:'DOSA',life:900,ownerId:k.char.id});
+    AUDIO.beep(380,.14,.12,k.x,k.y);setTimeout(()=>AUDIO.beep(280,.10,.10,k.x,k.y),80);
+    if(k.isPlayer)showNotif("🫓 DOSA!",600,'DOSA');
     return;
   }
-  // Projectile en avant
+  // Projectiles en avant : CHAPPAL, CUILLERE, OIGNON
   const px=k.x+Math.cos(k.angle)*20, py=k.y+Math.sin(k.angle)*20;
-  game.projectiles.push({x:px,y:py,angle:k.angle,speed:info.speed,type,ownerId:k.char.id,life:info.life,bounceCount:type==='POULET'?4:0});
-  AUDIO.beep(660,.1,.15,k.x,k.y);
-  if(k.isPlayer)showNotif(type==='FUSIL'?" FUSIL!":type==='COUTEAU'?" COUTEAU!":" POULET!",600,type);
+  game.projectiles.push({x:px,y:py,angle:k.angle,speed:info.speed,type,ownerId:k.char.id,life:info.life,bounceCount:type==='OIGNON'?4:0});
+  if(type==='CHAPPAL'){AUDIO.beep(520,.08,.15,k.x,k.y);setTimeout(()=>AUDIO.beep(320,.06,.12,k.x,k.y),60);}
+  else if(type==='CUILLERE'){AUDIO.beep(740,.1,.14,k.x,k.y);}
+  else{AUDIO.beep(500,.08,.13,k.x,k.y);} // OIGNON
+  if(k.isPlayer)showNotif(type==='CHAPPAL'?"🩴 CHAPPAL!":type==='CUILLERE'?"🥄 CUILLÈRE!":"🧅 OIGNON!",600,type);
 }
 
 // Mise à jour des projectiles
@@ -1329,24 +1336,24 @@ function updateProjectiles(dt){
   for(let i=game.projectiles.length-1;i>=0;i--){
     const p=game.projectiles[i];
 
-    // Homing du poulet : cherche le kart ennemi le plus proche devant lui
-    if(p.type==='POULET'){
+    // Homing de l'oignon : cherche le kart ennemi le plus proche devant lui
+    if(p.type==='OIGNON'){
       let bestTarget=null, bestScore=-Infinity;
       for(const k of game.karts){
         if(k.char.id===p.ownerId||k.stunTime>0)continue;
         const dx=k.x-p.x, dy=k.y-p.y;
         const dist=Math.hypot(dx,dy);
-        if(dist>200)continue; // rayon de détection
+        if(dist>200)continue;
         const angleToK=Math.atan2(dy,dx);
         const angleDiff=Math.abs(((angleToK-p.angle)+Math.PI*3)%(Math.PI*2)-Math.PI);
-        if(angleDiff>Math.PI*0.75)continue; // ignore si derrière
+        if(angleDiff>Math.PI*0.75)continue;
         const score=1/dist - angleDiff*0.3;
         if(score>bestScore){bestScore=score;bestTarget=k;}
       }
       if(bestTarget){
         const desired=Math.atan2(bestTarget.y-p.y,bestTarget.x-p.x);
         let diff=((desired-p.angle)+Math.PI*3)%(Math.PI*2)-Math.PI;
-        p.angle+=Math.sign(diff)*Math.min(Math.abs(diff),0.06*dt); // virage progressif
+        p.angle+=Math.sign(diff)*Math.min(Math.abs(diff),0.06*dt);
       }
     }
 
@@ -1354,7 +1361,7 @@ function updateProjectiles(dt){
     p.y+=Math.sin(p.angle)*p.speed*dt*.5;
     p.life-=dt;
 
-    // Rebond du poulet hors-piste
+    // Rebond de l'oignon hors-piste
     if(p.bounceCount>0){
       const near=nearestCenter(p.x,p.y);
       if(!isOnTrack(near.dist)){p.angle+=Math.PI*.4;p.bounceCount--;AUDIO.beep(330,.05,.08,p.x,p.y);}
@@ -1362,14 +1369,14 @@ function updateProjectiles(dt){
 
     let hit=false;
 
-    // Poulet détruit par une banane sur sa trajectoire
-    if(p.type==='POULET'){
+    // Oignon détruit par une dosa sur sa trajectoire
+    if(p.type==='OIGNON'){
       for(let j=game.droppedItems.length-1;j>=0;j--){
         const d=game.droppedItems[j];
-        if(d.type!=='BANANE')continue;
+        if(d.type!=='DOSA')continue;
         if(Math.hypot(p.x-d.x,p.y-d.y)<14){
           game.droppedItems.splice(j,1);
-          AUDIO.beep(220,.12,.15,d.x,d.y);
+          AUDIO.beep(260,.12,.15,d.x,d.y);
           hit=true; break;
         }
       }
@@ -1397,7 +1404,7 @@ function updateDroppedItems(dt){
     d.life-=dt;
     for(const k of game.karts){
       if(k.char.id===d.ownerId)continue;
-      if(Math.hypot(k.x-d.x,k.y-d.y)<15){stunKart(k,'BANANE');game.droppedItems.splice(i,1);break;}
+      if(Math.hypot(k.x-d.x,k.y-d.y)<15){stunKart(k,'DOSA');game.droppedItems.splice(i,1);break;}
     }
     if(d.life<=0)game.droppedItems.splice(i,1);
   }
@@ -1405,8 +1412,8 @@ function updateDroppedItems(dt){
 
 // Effet déraper : durées courtes pour ne pas pénaliser trop longtemps
 function stunKart(k,type){
-  if(k.stunTime>0||k.starTime>0)return; // invincible pendant l'étoile
-  const dur={FUSIL:55,COUTEAU:40,POULET:65,BANANE:45}[type]||50; // ~0.7–1.1s à 60fps
+  if(k.stunTime>0||k.starTime>0)return; // invincible pendant le Kurkure
+  const dur={CHAPPAL:60,CUILLERE:42,OIGNON:70,DOSA:48,KURKURE:35}[type]||50;
   k.stunTime=dur;
   AUDIO.beep(220,.22,.18,k.x,k.y);
   if(k.isPlayer){showNotif("💥 TOUCHÉ!",700);hudEl.classList.add('stun');setTimeout(()=>hudEl.classList.remove('stun'),700);}
@@ -1453,19 +1460,18 @@ function resolveKartCollisions(){
     const a=ks[i],b=ks[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),minD=9;
     if(d>0&&d<minD){
       const aStar=a.starTime>0,bStar=b.starTime>0;
-      // Étoile vs étoile : se repoussent normalement, sans étourdir
+      // Kurkure vs Kurkure : se repoussent normalement, sans étourdir
       if(aStar&&bStar){
         const push=(minD-d)/2,nx=dx/d,ny=dy/d;
         a.x-=nx*push;a.y-=ny*push;b.x+=nx*push;b.y+=ny*push;
         continue;
       }
-      // Une étoile contre un kart normal : l'étoile traverse, l'autre est projeté + étourdi
+      // Kurkure contre un kart normal : traverse + étourdit la victime
       if(aStar||bStar){
         const star=aStar?a:b, victim=aStar?b:a;
         const sign=aStar?1:-1, push=(minD-d), nx=dx/d, ny=dy/d;
-        victim.x+=nx*push*sign;victim.y+=ny*push*sign; // pousse la victime hors du chemin
-        stunKart(victim,'POULET'); // étourdit comme un coup
-        // l'étoile ne ralentit pas et n'est pas déplacée
+        victim.x+=nx*push*sign;victim.y+=ny*push*sign;
+        stunKart(victim,'OIGNON');
         continue;
       }
       // Collision normale entre deux karts
@@ -1538,13 +1544,13 @@ function drawHUD(){
     itemCorner.classList.add('active');
     drawPixelIcon(hudIc,p.item);hItem.style.display='';
   }else if(p.starTime>0){
-    drawPixelIcon(_icC,'ETOILE');icLabel.textContent='ÉTOILE';
+    drawPixelIcon(_icC,'KURKURE');icLabel.textContent='KURKURE';
     itemCorner.classList.add('active');
-    drawPixelIcon(hudIc,'ETOILE');hItem.style.display='';
+    drawPixelIcon(hudIc,'KURKURE');hItem.style.display='';
   }else if(p.boostTime>0){
-    drawPixelIcon(_icC,'TURBO');icLabel.textContent='TURBO';
+    drawPixelIcon(_icC,'CHILI');icLabel.textContent='CHILI';
     itemCorner.classList.add('active');
-    drawPixelIcon(hudIc,'TURBO');hItem.style.display='';
+    drawPixelIcon(hudIc,'CHILI');hItem.style.display='';
   }else{
     itemCorner.classList.remove('active');
     hItem.style.display='none';
