@@ -27,7 +27,13 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 .subtitle{margin-top:6px;font-size:clamp(9px,1.4vw,12px);color:#6a9bbf;letter-spacing:2px;opacity:.65;}
 .prompt{margin-top:34px;font-size:clamp(14px,3vw,26px);animation:blink 1s steps(2,start) infinite;}
 @keyframes blink{50%{opacity:0}}
-.hint{margin-top:16px;font-size:clamp(10px,1.8vw,14px);color:#88a;line-height:1.7;}
+.settings-controls-title{margin-top:18px;font-size:clamp(11px,1.8vw,14px);letter-spacing:2px;color:#f5c842;font-weight:700;opacity:.85;}
+.settings-controls-grid{display:flex;gap:clamp(12px,3vw,32px);margin-top:8px;flex-wrap:wrap;justify-content:center;}
+.ctrl-block{background:rgba(0,0,0,.28);border:1px solid rgba(255,200,60,.18);border-radius:10px;padding:8px 14px;min-width:140px;}
+.ctrl-block-label{font-size:clamp(10px,1.5vw,12px);color:#f5c842;letter-spacing:1px;margin-bottom:5px;opacity:.8;}
+.ctrl-row{display:flex;align-items:center;gap:8px;margin:3px 0;}
+.ctrl-key{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:5px;padding:1px 6px;font-size:clamp(9px,1.4vw,11px);color:#fff;font-family:monospace;white-space:nowrap;min-width:44px;text-align:center;}
+.ctrl-desc{font-size:clamp(9px,1.4vw,11px);color:#ccc;}
 #tip-bar{margin-top:12px;font-size:clamp(11px,1.9vw,14px);color:#f5c842;background:rgba(0,0,0,.32);border:1px solid rgba(255,200,60,.25);border-radius:20px;padding:5px 16px;display:flex;align-items:center;gap:8px;min-height:28px;transition:opacity .4s;}
 #tip-bar.fade{opacity:0;}
 #tip-icon{font-size:1.3em;flex-shrink:0;}
@@ -237,7 +243,6 @@ input[type=range].pk-slider::-moz-range-thumb{width:20px;height:20px;border-radi
         <button class="nav-btn" id="title-settings" data-i18n="settings_btn"><canvas class="menu-pixel-icon" data-emoji="⚙" width="28" height="28"></canvas> PARAMÈTRES</button>
       </div>
     </div>
-    <div class="hint" data-i18n="hint">Menus : ← → choisir · Entrée valider<br>Course : ← → diriger · ↑ gaz · ↓ frein · Shift item</div>
     <div id="tip-bar"><span id="tip-icon"></span><span id="tip-text"></span></div>
   </div>
 
@@ -325,7 +330,26 @@ input[type=range].pk-slider::-moz-range-thumb{width:20px;height:20px;border-radi
         </div>
       </div>
     </div>
-    <button class="go-btn" id="settings-back" style="margin-top:26px" data-i18n="back">◀ RETOUR</button>
+    <div class="settings-controls-title" data-i18n="ctrl_title">CONTRÔLES</div>
+    <div class="settings-controls-grid">
+      <div class="ctrl-block">
+        <div class="ctrl-block-label" data-i18n="ctrl_keyboard">⌨ CLAVIER</div>
+        <div class="ctrl-row"><span class="ctrl-key">← →</span><span class="ctrl-desc" data-i18n="ctrl_steer">Diriger</span></div>
+        <div class="ctrl-row"><span class="ctrl-key">↑</span><span class="ctrl-desc" data-i18n="ctrl_gas">Accélérer</span></div>
+        <div class="ctrl-row"><span class="ctrl-key">↓</span><span class="ctrl-desc" data-i18n="ctrl_brake">Freiner</span></div>
+        <div class="ctrl-row"><span class="ctrl-key">Shift</span><span class="ctrl-desc" data-i18n="ctrl_item">Utiliser item</span></div>
+        <div class="ctrl-row"><span class="ctrl-key">Entrée</span><span class="ctrl-desc" data-i18n="ctrl_confirm">Valider menu</span></div>
+      </div>
+      <div class="ctrl-block">
+        <div class="ctrl-block-label" data-i18n="ctrl_gamepad">🎮 MANETTE</div>
+        <div class="ctrl-row"><span class="ctrl-key">L-stick</span><span class="ctrl-desc" data-i18n="ctrl_steer">Diriger</span></div>
+        <div class="ctrl-row"><span class="ctrl-key">RT</span><span class="ctrl-desc" data-i18n="ctrl_gas">Accélérer</span></div>
+        <div class="ctrl-row"><span class="ctrl-key">LT</span><span class="ctrl-desc" data-i18n="ctrl_brake">Freiner</span></div>
+        <div class="ctrl-row"><span class="ctrl-key">A</span><span class="ctrl-desc" data-i18n="ctrl_item">Utiliser item</span></div>
+        <div class="ctrl-row"><span class="ctrl-key">B</span><span class="ctrl-desc" data-i18n="ctrl_back">Retour</span></div>
+      </div>
+    </div>
+    <button class="go-btn" id="settings-back" style="margin-top:20px" data-i18n="back">◀ RETOUR</button>
   </div>
 
   <div id="screen-stats" class="screen">
@@ -446,6 +470,8 @@ const STRINGS={
     lap_label:'TOUR', ordinals:['1er','2e','3e','4e'],
     stats_btn:'📊 STATISTIQUES', stats_title:'📊 STATISTIQUES', back:'◀ RETOUR',
     settings_btn:'⚙ PARAMÈTRES', settings_title:'⚙ PARAMÈTRES', set_music_vol:'VOLUME MUSIQUE', set_sfx_vol:'VOLUME EFFETS',
+    ctrl_title:'CONTRÔLES', ctrl_keyboard:'⌨ CLAVIER', ctrl_gamepad:'🎮 MANETTE',
+    ctrl_steer:'Diriger', ctrl_gas:'Accélérer', ctrl_brake:'Freiner', ctrl_item:'Utiliser item', ctrl_confirm:'Valider menu', ctrl_back:'Retour',
     stats_reset:'Réinitialiser les statistiques',
     choose_diff:'CHOISIS LA DIFFICULTÉ',
     diff_easy:'FACILE', diff_normal:'NORMAL', diff_hard:'DIFFICILE',
@@ -478,6 +504,8 @@ const STRINGS={
     lap_label:'LAP', ordinals:['1st','2nd','3rd','4th'],
     stats_btn:'📊 STATS', stats_title:'📊 STATISTICS', back:'◀ BACK',
     settings_btn:'⚙ SETTINGS', settings_title:'⚙ SETTINGS', set_music_vol:'MUSIC VOLUME', set_sfx_vol:'SFX VOLUME',
+    ctrl_title:'CONTROLS', ctrl_keyboard:'⌨ KEYBOARD', ctrl_gamepad:'🎮 GAMEPAD',
+    ctrl_steer:'Steer', ctrl_gas:'Accelerate', ctrl_brake:'Brake', ctrl_item:'Use item', ctrl_confirm:'Confirm menu', ctrl_back:'Back',
     stats_reset:'Reset statistics',
     choose_diff:'CHOOSE DIFFICULTY',
     diff_easy:'EASY', diff_normal:'NORMAL', diff_hard:'HARD',
@@ -510,6 +538,8 @@ const STRINGS={
     lap_label:'ਲੈਪ', ordinals:['1st','2nd','3rd','4th'],
     stats_btn:'📊 ਅੰਕੜੇ', stats_title:'📊 ਅੰਕੜੇ', back:'◀ ਵਾਪਸ',
     settings_btn:'⚙ ਸੈਟਿੰਗਾਂ', settings_title:'⚙ ਸੈਟਿੰਗਾਂ', set_music_vol:'ਸੰਗੀਤ ਆਵਾਜ਼', set_sfx_vol:'SFX ਆਵਾਜ਼',
+    ctrl_title:'ਕੰਟਰੋਲ', ctrl_keyboard:'⌨ ਕੀਬੋਰਡ', ctrl_gamepad:'🎮 ਗੇਮਪੈਡ',
+    ctrl_steer:'ਦਿਸ਼ਾ', ctrl_gas:'ਤੇਜ਼ ਕਰੋ', ctrl_brake:'ਬ੍ਰੇਕ', ctrl_item:'ਆਈਟਮ ਵਰਤੋ', ctrl_confirm:'ਪੁਸ਼ਟੀ', ctrl_back:'ਵਾਪਸ',
     stats_reset:'ਅੰਕੜਿਆਂ ਨੂੰ ਰੀਸੈਟ ਕਰੋ',
     choose_diff:'ਮੁਸ਼ਕਿਲ ਚੁਣੋ',
     diff_easy:'ਆਸਾਨ', diff_normal:'ਸਧਾਰਣ', diff_hard:'ਮੁਸ਼ਕਲ',
@@ -542,6 +572,8 @@ const STRINGS={
     lap_label:'लैप', ordinals:['1st','2nd','3rd','4th'],
     stats_btn:'📊 आंकड़े', stats_title:'📊 आंकड़े', back:'◀ पीछे',
     settings_btn:'⚙ सेटिंग्स', settings_title:'⚙ सेटिंग्स', set_music_vol:'संगीत वॉल्यूम', set_sfx_vol:'SFX वॉल्यूम',
+    ctrl_title:'नियंत्रण', ctrl_keyboard:'⌨ कीबोर्ड', ctrl_gamepad:'🎮 गेमपैड',
+    ctrl_steer:'दिशा', ctrl_gas:'तेज़ करो', ctrl_brake:'ब्रेक', ctrl_item:'आइटम उपयोग', ctrl_confirm:'पुष्टि', ctrl_back:'वापस',
     stats_reset:'आंकड़ों को रीसेट करो',
     choose_diff:'कठिनाई चुनो',
     diff_easy:'आसान', diff_normal:'सामान्य', diff_hard:'मुश्किल',
