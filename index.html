@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>PUNJABI SPEED</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23111'/%3E%3Ctext x='16' y='25' font-family='Courier New,Consolas,monospace' font-size='27' font-weight='900' fill='%23E24B4A' text-anchor='middle'%3EP%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%234a1330;stop-opacity:1'/%3E%3Cstop offset='100%25' style='stop-color:%236a1f12;stop-opacity:1'/%3E%3C/linearGradient%3E%3ClinearGradient id='fg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23FFC83D;stop-opacity:1'/%3E%3Cstop offset='100%25' style='stop-color:%23FF8A1E;stop-opacity:1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='6' fill='url(%23bg)'/%3E%3Ctext x='16' y='25' font-family='Courier New,Consolas,monospace' font-size='27' font-weight='900' fill='url(%23fg)' text-anchor='middle'%3EP%3C/text%3E%3C/svg%3E">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; user-select:none; -webkit-user-select:none; }
 html, body { width:100%; height:100%; background:#000; overflow:hidden; font-family:"Courier New",Consolas,monospace; color:#fff; touch-action:none; }
@@ -442,7 +442,6 @@ const STRINGS={
     rear_warn:'⚠ DERRIÈRE !',
     set_laps:'TOURS', set_cc:'CC', set_diff:'DIFFICULTÉ',
     race_params:'PARAMÈTRES DE COURSE',
-    choose_diff:'CHOISIS LA DIFFICULTÉ',
     r_place:'POSITION', r_time_label:'TEMPS', r_best_lap:'MEILLEUR TOUR',
     players_1:'👤 1 JOUEUR', players_2:'👥 2 JOUEURS',
   },
@@ -466,9 +465,54 @@ const STRINGS={
     rear_warn:'⚠ BEHIND !',
     set_laps:'LAPS', set_cc:'CC', set_diff:'DIFFICULTY',
     race_params:'RACE SETTINGS',
-    choose_diff:'CHOOSE DIFFICULTY',
     r_place:'POSITION', r_time_label:'TIME', r_best_lap:'BEST LAP',
     players_1:'👤 1 PLAYER', players_2:'👥 2 PLAYERS',
+  },
+  pa:{
+    press_play:'▶ ਖੇਡੋ',
+    hint:'ਮੇਨੂ : ← → ਚੁਣੋ · Enter ਪੁਸ਼ਟੀ ਕਰੋ<br>ਰੇਸ : ← → ਸਟੀਅਰ · ↑ ਗੈਸ · ↓ ਬ੍ਰੇਕ · Shift ਆਈਟਮ',
+    choose_pilot:'ਆਪਣੇ ਡਰਾਈਵਰ ਚੁਣੋ', choose_circuit:'ਆਪਣਾ ਸਰਕਟ ਚੁਣੋ',
+    next:'ਅਗਲਾ ▶', go:'ਸ਼ੁਰੂ ▶', replay:'ਮੁੜ ਖੇਡੋ', menu:'ਮੇਨੂ',
+    pause:'ਰੁਕਣਾ', resume:'▶ ਜਾਰੀ ਰਖੋ', restart:'↺ ਮੁੜ ਸ਼ੁਰੂ ਕਰੋ', main_menu:'⌂ ਮੁੱਖ ਮੇਨੂ',
+    wrong_way:'⚠ ਗਲਤ ਦਿਸ਼ਾ!', bridge:'ਪੁਲ', use_btn:'ਵਰਤੋ',
+    lap_label:'ਲੈਪ', ordinals:['1st','2nd','3rd','4th'],
+    stats_btn:'📊 ਅੰਕੜੇ', stats_title:'📊 ਅੰਕੜੇ', back:'◀ ਵਾਪਸ',
+    settings_btn:'⚙ ਸੈਟਿੰਗਾਂ', settings_title:'⚙ ਸੈਟਿੰਗਾਂ', set_music_vol:'ਸੰਗੀਤ ਆਵਾਜ਼', set_sfx_vol:'SFX ਆਵਾਜ਼',
+    stats_reset:'ਅੰਕੜਿਆਂ ਨੂੰ ਰੀਸੈਟ ਕਰੋ',
+    choose_diff:'ਮੁਸ਼ਕਿਲ ਚੁਣੋ',
+    diff_easy:'ਆਸਾਨ', diff_normal:'ਸਧਾਰਣ', diff_hard:'ਮੁਸ਼ਕਲ',
+    diff_easy_desc:'ਹੌਲੀ AI · ਘੱਟ ਆਈਟਮ', diff_normal_desc:'ਸੰਤੁਲਿਤ · ਸਿਫਾਰਸ਼ੀ', diff_hard_desc:'ਪੂਰਾ ਧਿਆਨ ਦਿਓ',
+    st_overall:'ਕੁਲ', st_races:'ਰੇਸ', st_wins:'ਜਿੱਤ', st_podiums:'ਪੋਡੀਅਮ',
+    st_winrate:'ਜਿੱਤ %', st_besttimes:'ਸਭ ਤੋਂ ਵਧੀਆ ਸਮਾਂ', st_bestlaps:'ਸਭ ਤੋਂ ਵਧੀਆ ਲੈਪ',
+    st_none:'—', st_nodata:'ਕੋਈ ਰੇਸ ਨਹੀਂ ਖੇਡੀ',
+    rear_warn:'⚠ ਪਿੱਛੇ!',
+    set_laps:'ਲੈਪ', set_cc:'CC', set_diff:'ਮੁਸ਼ਕਲ',
+    race_params:'ਰੇਸ ਸੈਟਿੰਗਾਂ',
+    r_place:'ਸਥਿਤੀ', r_time_label:'ਸਮਾਂ', r_best_lap:'ਸਭ ਤੋਂ ਵਧੀਆ ਲੈਪ',
+    players_1:'👤 1 ਖਿਡਾਰੀ', players_2:'👥 2 ਖਿਡਾਰੀ',
+  },
+  hi:{
+    press_play:'▶ खेलो',
+    hint:'मेनू : ← → चुनो · Enter पुष्टि करो<br>दौड़ : ← → स्टीयर · ↑ गैस · ↓ ब्रेक · Shift आइटम',
+    choose_pilot:'अपना चालक चुनो', choose_circuit:'अपना सर्किट चुनो',
+    next:'अगला ▶', go:'शुरू करो ▶', replay:'फिर से खेलो', menu:'मेनू',
+    pause:'रुको', resume:'▶ जारी रखो', restart:'↺ फिर से शुरू करो', main_menu:'⌂ मुख्य मेनू',
+    wrong_way:'⚠ गलत दिशा!', bridge:'पुल', use_btn:'उपयोग करो',
+    lap_label:'लैप', ordinals:['1st','2nd','3rd','4th'],
+    stats_btn:'📊 आंकड़े', stats_title:'📊 आंकड़े', back:'◀ पीछे',
+    settings_btn:'⚙ सेटिंग्स', settings_title:'⚙ सेटिंग्स', set_music_vol:'संगीत वॉल्यूम', set_sfx_vol:'SFX वॉल्यूम',
+    stats_reset:'आंकड़ों को रीसेट करो',
+    choose_diff:'कठिनाई चुनो',
+    diff_easy:'आसान', diff_normal:'सामान्य', diff_hard:'मुश्किल',
+    diff_easy_desc:'धीमा AI · ज्यादा आइटम', diff_normal_desc:'संतुलित · सुझाया हुआ', diff_hard_desc:'तेज़ AI · सावधान रहो',
+    st_overall:'कुल', st_races:'दौड़', st_wins:'जीत', st_podiums:'पोडियम',
+    st_winrate:'जीत %', st_besttimes:'सर्वश्रेष्ठ समय', st_bestlaps:'सर्वश्रेष्ठ लैप',
+    st_none:'—', st_nodata:'कोई दौड़ नहीं खेली',
+    rear_warn:'⚠ पीछे!',
+    set_laps:'लैप', set_cc:'CC', set_diff:'कठिनाई',
+    race_params:'दौड़ की सेटिंग्स',
+    r_place:'स्थिति', r_time_label:'समय', r_best_lap:'सर्वश्रेष्ठ लैप',
+    players_1:'👤 1 खिलाड़ी', players_2:'👥 2 खिलाड़ी',
   },
 };
 function T(k){return(STRINGS[lang]||STRINGS.fr)[k]||(STRINGS.fr[k]||k);}
@@ -478,9 +522,16 @@ function updateTexts(){
     if(el.tagName==='INPUT'||el.tagName==='BUTTON')el.textContent=v;
     else el.innerHTML=v;
   });
-  document.getElementById('lang-btn').textContent=lang==='fr'?'EN':'FR';
+  document.getElementById('lang-btn').textContent={'fr':'EN','en':'PA','pa':'HI','hi':'FR'}[lang]||'EN';
 }
 function setLang(l){lang=l;updateTexts();}
+// Cycle through all languages
+function cycleLang(){
+  const langs=['fr','en','pa','hi'];
+  const idx=langs.indexOf(lang);
+  lang=langs[(idx+1)%langs.length];
+  updateTexts();
+}
 
 function hexToRgb(h){h=h.replace('#','');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
 function packRGB(r,g,b){return((255<<24)|(b<<16)|(g<<8)|r)>>>0;}
@@ -2187,7 +2238,7 @@ function init(){
   document.getElementById('stats-back').addEventListener('click',()=>{game.state=STATE.TITLE;menuMusicPlay();showScreen('screen-title');});
   document.getElementById('stats-reset').addEventListener('click',()=>{resetStats();renderStats();AUDIO.beep(330,.1,.12);});
   // Langue
-  document.getElementById('lang-btn').addEventListener('click',()=>{setLang(lang==='fr'?'en':'fr');if(game.state===STATE.STATS)renderStats();if(game.state===STATE.TRACK_SELECT)initTrackSelect();});
+  document.getElementById('lang-btn').addEventListener('click',()=>{cycleLang();if(game.state===STATE.STATS)renderStats();if(game.state===STATE.TRACK_SELECT)initTrackSelect();});
   document.getElementById('home-btn').addEventListener('click',()=>{game.state=STATE.TITLE;menuMusicPlay();showScreen('screen-title');AUDIO.beep(500,.05,.1);});
   loadStats();
   updateTexts();
