@@ -14,7 +14,8 @@
 html, body { width:100%; height:100%; background:#000; overflow:hidden; font-family:"Courier New",Consolas,monospace; color:#fff; touch-action:none; }
 #stage { position:absolute; top:0;right:0;bottom:0;left:0; display:flex; align-items:center; justify-content:center;
   padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px); }
-#frame { position:relative; width:100%; height:100%; max-width:177.78vh; max-height:56.25vw; margin:auto; background:#1b2838; overflow:hidden; }
+#frame { position:relative; width:100%; height:100%; max-width:177.78vh; max-height:56.25vw; margin:auto; background:#1b2838; overflow:hidden;
+  --pad:14px; --btn:clamp(54px,16vmin,82px); --btn-big:clamp(70px,22vmin,110px); --joy:clamp(104px,30vmin,164px); }
 
 /* Portrait overlay — prompts user to rotate */
 #rotate-prompt { display:none; position:fixed; top:0;right:0;bottom:0;left:0; z-index:9999; background:#000;
@@ -114,22 +115,29 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 .result-board .me{color:#F4D03F;font-weight:bold;}
 .result-btns{margin-top:24px;display:flex;gap:16px;}
 
-/* Taille des boutons tactiles : tient compte de la largeur ET de la hauteur
-   (sur un téléphone en paysage l'écran est court, donc on limite via vh) */
-#touch-controls{--tbtn:clamp(52px,18vmin,92px);position:absolute;top:0;right:0;bottom:0;left:0;display:none;z-index:7;}
+/* ===== Contrôles tactiles (téléphone + radio sans manette) =====
+   Joystick analogique à gauche · accélérateur (gros) + frein + item à droite.
+   Tailles via vmin → tiennent compte de la hauteur sur écran court. */
+#touch-controls{position:absolute;top:0;right:0;bottom:0;left:0;display:none;z-index:7;}
 #touch-controls.active{display:block;}
-.tbtn{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));width:var(--tbtn);height:var(--tbtn);border-radius:18px;background:rgba(255,255,255,.14);border:3px solid rgba(255,255,255,.30);display:flex;align-items:center;justify-content:center;font-size:calc(var(--tbtn) * 0.4);font-weight:900;color:#fff;pointer-events:auto;}
-.tbtn.pressed{background:rgba(244,208,63,.55);border-color:#F4D03F;color:#000;}
-#t-left{left:calc(12px + env(safe-area-inset-left,0px));}
-#t-right{left:calc(12px + env(safe-area-inset-left,0px) + var(--tbtn) + 10px);}
-#t-use{left:50%;transform:translateX(-50%);background:rgba(155,89,182,.30);border-color:rgba(200,150,255,.50);font-size:calc(var(--tbtn) * 0.18);letter-spacing:1px;}
-#t-brake{right:calc(12px + env(safe-area-inset-right,0px) + var(--tbtn) + 10px);background:rgba(226,75,74,.20);}
-#t-accel{right:calc(12px + env(safe-area-inset-right,0px));background:rgba(29,158,117,.22);}
+
+/* Joystick directionnel (gauche) — pilote INPUT.touch.steer (-1..1) */
+#joystick{position:absolute;bottom:calc(var(--pad) + env(safe-area-inset-bottom,0px));left:calc(var(--pad) + env(safe-area-inset-left,0px));width:var(--joy);height:var(--joy);border-radius:50%;background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.05),rgba(255,255,255,.14));border:3px solid rgba(255,255,255,.28);pointer-events:auto;touch-action:none;box-shadow:inset 0 0 18px rgba(0,0,0,.35);}
+#joy-arrows{position:absolute;top:0;right:0;bottom:0;left:0;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:calc(var(--joy)*0.15);color:rgba(255,255,255,.30);pointer-events:none;}
+#joy-knob{position:absolute;left:50%;top:50%;width:46%;height:46%;border-radius:50%;background:radial-gradient(circle at 40% 35%,#ffe89a,#F4D03F 60%,#caa42a);border:2px solid #fff6d8;transform:translate(-50%,-50%);box-shadow:0 3px 8px rgba(0,0,0,.45);transition:transform .05s linear;}
+#joystick.dragging #joy-knob{transition:none;}
+
+/* Boutons d'action (droite) */
+.tbtn{position:absolute;width:var(--btn);height:var(--btn);border-radius:18px;background:rgba(255,255,255,.14);border:3px solid rgba(255,255,255,.30);display:flex;align-items:center;justify-content:center;font-size:calc(var(--btn)*0.4);font-weight:900;color:#fff;pointer-events:auto;}
+.tbtn.pressed{background:rgba(244,208,63,.55);border-color:#F4D03F;color:#000;transform:scale(.95);}
+#t-accel{right:calc(var(--pad) + env(safe-area-inset-right,0px));bottom:calc(var(--pad) + env(safe-area-inset-bottom,0px));width:var(--btn-big);height:var(--btn-big);font-size:calc(var(--btn-big)*0.4);background:rgba(29,158,117,.30);border-color:rgba(80,230,170,.55);}
+#t-brake{right:calc(var(--pad) + env(safe-area-inset-right,0px) + var(--btn-big) + 12px);bottom:calc(var(--pad) + env(safe-area-inset-bottom,0px));background:rgba(226,75,74,.28);border-color:rgba(255,140,140,.5);}
+#t-use{right:calc(var(--pad) + env(safe-area-inset-right,0px) + var(--btn-big) + 12px);bottom:calc(var(--pad) + env(safe-area-inset-bottom,0px) + var(--btn) + 12px);background:rgba(155,89,182,.34);border-color:rgba(200,150,255,.55);font-size:calc(var(--btn)*0.26);letter-spacing:1px;}
 .corner-note{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);font-size:10px;color:#567;z-index:8;pointer-events:none;}
-/* ---- Item tenu (coin bas-gauche) ---- */
-#item-corner{position:absolute;bottom:calc(18px + clamp(52px,18vmin,92px) + env(safe-area-inset-bottom,0px));left:calc(12px + env(safe-area-inset-left,0px));z-index:9;pointer-events:none;display:none;flex-direction:column;align-items:center;gap:2px;}
+/* ---- Item tenu — au-dessus du bouton item (droite), montre ce qu'on va lancer ---- */
+#item-corner{position:absolute;right:calc(var(--pad) + env(safe-area-inset-right,0px) + var(--btn-big) + 12px);bottom:calc(var(--pad) + env(safe-area-inset-bottom,0px) + var(--btn)*2 + 24px);z-index:9;pointer-events:none;display:none;flex-direction:column;align-items:center;gap:2px;}
 #item-corner.active{display:flex;}
-#ic-box{width:clamp(52px,9vw,76px);height:clamp(52px,9vw,76px);border-radius:12px;background:rgba(0,0,0,.60);border:3px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-size:clamp(26px,5vw,40px);}
+#ic-box{width:var(--btn);height:var(--btn);border-radius:12px;background:rgba(0,0,0,.60);border:3px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-size:clamp(26px,5vw,40px);}
 #item-corner.active #ic-box{border-color:#F4D03F;box-shadow:0 0 10px rgba(244,208,63,.45);}
 #ic-label{font-size:clamp(8px,1.4vw,11px);font-weight:bold;letter-spacing:1px;color:#F4D03F;text-shadow:1px 1px 0 #000;}
 
@@ -399,8 +407,7 @@ input[type=range].pk-slider::-moz-range-thumb{width:20px;height:20px;border-radi
   </div>
 
   <div id="touch-controls">
-    <div class="tbtn" id="t-left">◀</div>
-    <div class="tbtn" id="t-right">▶</div>
+    <div id="joystick"><div id="joy-arrows"><span>◀</span><span>▶</span></div><div id="joy-knob"></div></div>
     <div class="tbtn" id="t-use" data-i18n="use_btn">USE</div>
     <div class="tbtn" id="t-brake">B</div>
     <div class="tbtn" id="t-accel">A</div>
@@ -1084,7 +1091,7 @@ function isHuman(k){return !!(k&&(k.isPlayer||k.isP2));}
 
 /* ----- INPUT ----- */
 const INPUT={
-  keyboard:{},touch:{left:false,right:false,accel:false,brake:false,use:false},
+  keyboard:{},touch:{left:false,right:false,accel:false,brake:false,use:false,steer:0},
   gamepad:null,
   _gpPrev:{start:false,use:false}, // pour détecter front montant bouton Start/item
   _gpConnected:false,
@@ -1137,6 +1144,7 @@ const INPUT={
   // Valeur analogique du stick (-1..1), retombe sur binaire si clavier/tactile
   get steerAxis(){
     if(this.gamepad&&Math.abs(this.gamepad.steerAxis)>0.05)return this.gamepad.steerAxis;
+    if(this.touch.steer)return this.touch.steer; // joystick analogique (-1..1)
     if(this.keyboard['ArrowLeft']||this.keyboard['KeyA']||this.touch.left)return -1;
     if(this.keyboard['ArrowRight']||this.keyboard['KeyD']||this.touch.right)return 1;
     return 0;
@@ -1221,7 +1229,7 @@ function bindTouch(id,prop){
   const off=e=>{INPUT.touch[prop]=false;el.classList.remove('pressed');e.preventDefault();};
   el.addEventListener('pointerdown',on);el.addEventListener('pointerup',off);el.addEventListener('pointerleave',off);el.addEventListener('pointercancel',off);
 }
-bindTouch('t-left','left');bindTouch('t-right','right');bindTouch('t-accel','accel');bindTouch('t-brake','brake');
+bindTouch('t-accel','accel');bindTouch('t-brake','brake');
 // Bouton USE : déclenche l'item au pointerdown (pas de hold)
 document.getElementById('t-use').addEventListener('pointerdown',e=>{
   e.preventDefault();
@@ -1231,6 +1239,43 @@ document.getElementById('t-use').addEventListener('pointerdown',e=>{
 });
 document.getElementById('t-use').addEventListener('pointerup',e=>{document.getElementById('t-use').classList.remove('pressed');e.preventDefault();});
 document.getElementById('t-use').addEventListener('pointerleave',e=>{document.getElementById('t-use').classList.remove('pressed');});
+
+// ----- Joystick analogique (gauche) : pilote INPUT.touch.steer (-1..1) -----
+(function(){
+  const joy=document.getElementById('joystick'),knob=document.getElementById('joy-knob');
+  if(!joy)return;
+  let pid=null;
+  function apply(e){
+    const r=joy.getBoundingClientRect();
+    const cx=r.left+r.width/2, cy=r.top+r.height/2, rad=r.width/2;
+    let dx=e.clientX-cx, dy=e.clientY-cy;
+    const dist=Math.hypot(dx,dy);
+    if(dist>rad){dx*=rad/dist;dy*=rad/dist;} // borne au cercle
+    INPUT.touch.steer=Math.max(-1,Math.min(1,dx/rad)); // X = direction
+    const maxK=rad*0.55;
+    const kx=Math.max(-maxK,Math.min(maxK,dx)), ky=Math.max(-maxK,Math.min(maxK,dy));
+    knob.style.transform='translate(calc(-50% + '+kx+'px), calc(-50% + '+ky+'px))';
+  }
+  joy.addEventListener('pointerdown',function(e){
+    pid=e.pointerId; joy.classList.add('dragging');
+    try{joy.setPointerCapture(pid);}catch(_){}
+    AUDIO.init();AUDIO.resume();
+    apply(e); e.preventDefault();
+  });
+  joy.addEventListener('pointermove',function(e){
+    if(e.pointerId!==pid)return;
+    apply(e); e.preventDefault();
+  });
+  function release(e){
+    if(e.pointerId!==pid)return;
+    pid=null; joy.classList.remove('dragging');
+    INPUT.touch.steer=0;
+    knob.style.transform='translate(-50%,-50%)';
+    e.preventDefault();
+  }
+  joy.addEventListener('pointerup',release);
+  joy.addEventListener('pointercancel',release);
+})();
 
 const PERF={lowRes:false};
 
