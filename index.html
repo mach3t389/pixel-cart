@@ -100,7 +100,8 @@ body.sp-active #hud{display:none!important;}
 #sp-hud2 .sp-tag{background:#cc4422;color:#fff;}
 .sp-name{color:#F4D03F;}
 .sp-lap{color:#F4D03F;}
-.sp-pos{color:#fff;margin-left:auto;}
+.sp-time{color:#9fd0ff;margin-left:auto;}
+.sp-pos{color:#fff;margin-left:10px;}
 .sp-item{color:#ddd;background:rgba(255,255,255,.12);border-radius:5px;padding:1px 6px;}
 
 #bridge-hud{position:absolute;top:44px;left:50%;transform:translateX(-50%);display:none;background:rgba(120,140,180,.85);color:#fff;font-size:clamp(10px,2vw,14px);font-weight:bold;letter-spacing:2px;padding:3px 12px;border-radius:20px;z-index:8;pointer-events:none;}
@@ -421,10 +422,10 @@ input[type=range].pk-slider::-moz-range-thumb{width:20px;height:20px;border-radi
     <div class="seg" id="h-pos" style="flex:0 0 70px">1st</div>
   </div>
   <div id="sp-hud1" class="sp-hud">
-    <span class="sp-tag">J1</span><span class="sp-name" id="sp1-name"></span><span class="sp-lap" id="sp1-lap"></span><span class="sp-item" id="sp1-item" style="display:none"></span><span class="sp-pos" id="sp1-pos"></span>
+    <span class="sp-tag">J1</span><span class="sp-name" id="sp1-name"></span><span class="sp-lap" id="sp1-lap"></span><span class="sp-item" id="sp1-item" style="display:none"></span><span class="sp-time" id="sp1-time"></span><span class="sp-pos" id="sp1-pos"></span>
   </div>
   <div id="sp-hud2" class="sp-hud">
-    <span class="sp-tag">J2</span><span class="sp-name" id="sp2-name"></span><span class="sp-lap" id="sp2-lap"></span><span class="sp-item" id="sp2-item" style="display:none"></span><span class="sp-pos" id="sp2-pos"></span>
+    <span class="sp-tag">J2</span><span class="sp-name" id="sp2-name"></span><span class="sp-lap" id="sp2-lap"></span><span class="sp-item" id="sp2-item" style="display:none"></span><span class="sp-time" id="sp2-time"></span><span class="sp-pos" id="sp2-pos"></span>
   </div>
   <div id="bridge-hud">🌉 <span data-i18n="bridge">PONT</span></div>
   <div id="item-notif"></div>
@@ -1859,19 +1860,19 @@ function formatTime(ms){const m=Math.floor(ms/60000),s=Math.floor((ms%60000)/100
 function ordinal(n){return T('ordinals')[Math.min(n-1,3)]||n;}
 function computePlace(target){let place=1;const tp=target.finished?(1e9-target.finishTime):(target.laps+target.u)*1000;for(const k of game.karts){if(k===target)continue;const kp=k.finished?(1e9-k.finishTime):(k.laps+k.u)*1000;if(kp>tp)place++;}return place;}
 
-function _spHudKart(k,nameEl,lapEl,itemEl,posEl){
+function _spHudKart(k,nameEl,lapEl,itemEl,posEl,timeEl){
   nameEl.textContent=k.char.name;
   lapEl.textContent=' · '+T('lap_label')+' '+(k.finished?currentTrack.totalLaps:clamp(k.laps+1,1,currentTrack.totalLaps))+'/'+currentTrack.totalLaps;
   posEl.textContent=ordinal(computePlace(k));
+  if(timeEl)timeEl.textContent=formatTime(game.raceTime);
   const itm=k.item||(k.starTime>0?'KURKURE':null)||(k.boostTime>0?'CHILI':null);
   if(itm){itemEl.style.display='inline-block';itemEl.textContent=ITEM_INFO[itm].label;}
   else{itemEl.style.display='none';}
 }
 function drawHUD(){
   if(game.splitScreen&&game.p2){
-    _spHudKart(game.player,document.getElementById('sp1-name'),document.getElementById('sp1-lap'),document.getElementById('sp1-item'),document.getElementById('sp1-pos'));
-    _spHudKart(game.p2,document.getElementById('sp2-name'),document.getElementById('sp2-lap'),document.getElementById('sp2-item'),document.getElementById('sp2-pos'));
-    hTime.textContent=formatTime(game.raceTime);
+    _spHudKart(game.player,document.getElementById('sp1-name'),document.getElementById('sp1-lap'),document.getElementById('sp1-item'),document.getElementById('sp1-pos'),document.getElementById('sp1-time'));
+    _spHudKart(game.p2,document.getElementById('sp2-name'),document.getElementById('sp2-lap'),document.getElementById('sp2-item'),document.getElementById('sp2-pos'),document.getElementById('sp2-time'));
     return;
   }
   const p=game.player;
@@ -2445,26 +2446,8 @@ function drawBillboardsClipped(list,vpY0,vpH){
 }
 function drawSplitHUD(kart,vpY0,vpH,label){
   ctx.save();
-  ctx.fillStyle='rgba(0,0,0,0.58)';ctx.fillRect(0,vpY0,RENDER_W,20);
-  ctx.font='bold 11px "Courier New"';ctx.textBaseline='top';
-  ctx.fillStyle='#F4D03F';ctx.textAlign='left';
-  ctx.fillText(label+' LAP '+Math.min(kart.laps+1,currentTrack.totalLaps)+'/'+currentTrack.totalLaps,5,vpY0+4);
-  ctx.fillStyle='#fff';ctx.textAlign='center';
-  ctx.fillText(formatTime(game.raceTime),RENDER_W/2,vpY0+4);
-  ctx.fillStyle='#9fd0ff';ctx.textAlign='right';
-  ctx.fillText(Math.round((kart.speed/kart.char.stats.topSpeed)*180)+' km/h',RENDER_W-5,vpY0+4);
-  if(kart.item){
-    // Icône pixelisée de l'item dans le HUD split
-    const _info=ITEM_INFO[kart.item];
-    if(_info){
-      const _sz=16,_src=Math.max(6,Math.round(_sz/3));
-      const _px=_buildPixelEmoji(_info.icon,_src,_sz);
-      ctx.imageSmoothingEnabled=false;
-      ctx.drawImage(_px,5,vpY0+2,_sz,_sz);
-      ctx.imageSmoothingEnabled=true;
-    }
-  }
-  // Wrong-way
+  // La barre d'infos (nom, tour, chrono, item) est gérée par le DOM (sp-hud1/sp-hud2).
+  // Ici on ne dessine que l'avertissement « mauvais sens » par viewport.
   if(game.state===STATE.RACING&&isGoingWrongWay(kart)){
     ctx.font='bold 13px "Courier New"';ctx.textAlign='center';
     ctx.fillStyle='#ff3333';
