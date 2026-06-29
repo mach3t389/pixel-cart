@@ -1188,19 +1188,17 @@ function updateGamepadUI(){
   const pads=navigator.getGamepads?navigator.getGamepads():null;
   let gp=null; if(pads){for(let i=0;i<pads.length;i++){if(pads[i]&&pads[i].connected){gp=pads[i];break;}}}
   const isXbox=gp&&/(xbox|xinput|045e)/i.test(gp.id);
-  const T=LANG[lang]||LANG.fr;
   const steer=isXbox?'L-stick':'← →';
   const gas=isXbox?'RT':'A';
   const brake=isXbox?'LT':'B';
   const item=isXbox?'X / Y':'X';
-  const back=isXbox?'B':'B';
-  block.innerHTML=`<div class="ctrl-block-label">🎮 MANETTE${gp?' <span style="font-size:9px;opacity:.6">(${gp.id.slice(0,18)})</span>':''}</div>`
-    +`<div class="ctrl-row"><span class="ctrl-key">${steer}</span><span class="ctrl-desc">${T.ctrl_steer||'Diriger'}</span></div>`
-    +`<div class="ctrl-row"><span class="ctrl-key">${gas}</span><span class="ctrl-desc">${T.ctrl_gas||'Accélérer'}</span></div>`
-    +`<div class="ctrl-row"><span class="ctrl-key">${brake}</span><span class="ctrl-desc">${T.ctrl_brake||'Freiner'}</span></div>`
-    +`<div class="ctrl-row"><span class="ctrl-key">${item}</span><span class="ctrl-desc">${T.ctrl_item||'Utiliser item'}</span></div>`
-    +`<div class="ctrl-row"><span class="ctrl-key">↓ + ${item}</span><span class="ctrl-desc">${T.ctrl_item_back||'Lancer derrière'}</span></div>`
-    +`<div class="ctrl-row"><span class="ctrl-key">${back}</span><span class="ctrl-desc">${T.ctrl_back||'Retour menu'}</span></div>`;
+  block.innerHTML='<div class="ctrl-block-label">🎮 MANETTE'+(gp?' <span style="font-size:9px;opacity:.6">('+gp.id.slice(0,18)+')</span>':'')+'</div>'
+    +'<div class="ctrl-row"><span class="ctrl-key">'+steer+'</span><span class="ctrl-desc">'+T('ctrl_steer')+'</span></div>'
+    +'<div class="ctrl-row"><span class="ctrl-key">'+gas+'</span><span class="ctrl-desc">'+T('ctrl_gas')+'</span></div>'
+    +'<div class="ctrl-row"><span class="ctrl-key">'+brake+'</span><span class="ctrl-desc">'+T('ctrl_brake')+'</span></div>'
+    +'<div class="ctrl-row"><span class="ctrl-key">'+item+'</span><span class="ctrl-desc">'+T('ctrl_item')+'</span></div>'
+    +'<div class="ctrl-row"><span class="ctrl-key">↓ + '+item+'</span><span class="ctrl-desc">'+T('ctrl_item_back')+'</span></div>'
+    +'<div class="ctrl-row"><span class="ctrl-key">B</span><span class="ctrl-desc">'+T('ctrl_back')+'</span></div>';
 }
 
 window.addEventListener('gamepadconnected',()=>{
