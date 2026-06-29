@@ -80,6 +80,7 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 
 #hud{position:absolute;top:0;left:0;right:0;display:none;padding:6px 12px;background:rgba(0,0,0,.55);font-weight:bold;letter-spacing:1px;z-index:8;pointer-events:none;}
 #hud.active{display:flex;align-items:center;gap:14px;}
+body.sp-active #hud{display:none!important;}
 #hud .seg{flex:0 0 auto;}
 #hud .seg.center{flex:1 1 auto;text-align:center;}
 #h-lap{color:#F4D03F;font-size:clamp(13px,2.6vw,20px);}
@@ -1559,7 +1560,7 @@ function onLapCrossed(k){
     game._lapStart=game.raceTime;
     if(lapTime>3000)game._bestLapThisRace=Math.min(game._bestLapThisRace,lapTime);
   }
-  if(k.laps>=currentTrack.totalLaps){k.finished=true;k.finishTime=game.raceTime;if((k.isPlayer||k.isP2)&&game.state===STATE.RACING)finishRace();}
+  if(k.laps>=currentTrack.totalLaps){k.finished=true;k.finishTime=game.raceTime;const allDone=game.player.finished&&(!game.splitScreen||!game.p2||game.p2.finished);if(allDone&&game.state===STATE.RACING)finishRace();}
   else if(k.isPlayer||k.isP2){if(!SFX.play('lap',.85))AUDIO.beep(880,.12,.18);if(k.isPlayer)showLapFlash();}
 }
 
@@ -2213,7 +2214,7 @@ function showResult(){
   game.state=STATE.RESULT;
   AUDIO.silenceEngine();
   _menuMusicTimer=setTimeout(menuMusicPlay,2000); // laisser les voix de fin se faire entendre avant la musique
-  hudEl.classList.remove('active');document.getElementById('sp-hud1').classList.remove('active');document.getElementById('sp-hud2').classList.remove('active');bridgeHudEl.classList.remove('active');wrongWayEl.classList.remove('active');rearWarnEl.classList.remove('active');document.getElementById('star-fx').classList.remove('active');
+  document.body.classList.remove('sp-active');hudEl.classList.remove('active');document.getElementById('sp-hud1').classList.remove('active');document.getElementById('sp-hud2').classList.remove('active');bridgeHudEl.classList.remove('active');wrongWayEl.classList.remove('active');rearWarnEl.classList.remove('active');document.getElementById('star-fx').classList.remove('active');
   document.getElementById('touch-controls').classList.remove('active');
   const ranking=[...game.karts].sort((a,b)=>{const ap=a.finished?(1e9-a.finishTime):(a.laps+a.u),bp=b.finished?(1e9-b.finishTime):(b.laps+b.u);return bp-ap;});
   const place=ranking.indexOf(game.player)+1;
@@ -2339,11 +2340,11 @@ function startRace(){
   showScreen(null);
   hudEl.classList.remove('active');
   if(game.splitScreen){
-    hudEl.style.display='none'; // forcer caché même si classe 'active' résiduelle
+    document.body.classList.add('sp-active');
     document.getElementById('sp-hud1').classList.add('active');
     document.getElementById('sp-hud2').classList.add('active');
   } else {
-    hudEl.style.display=''; // laisser le CSS contrôler
+    document.body.classList.remove('sp-active');
     hudEl.classList.add('active');
   }
   // Vérification directe au démarrage (l'event gamepadconnected peut arriver avant le loop)
@@ -2549,7 +2550,7 @@ function pauseToMenu(){
   game.state=STATE.TITLE;
   document.getElementById('screen-pause').classList.remove('active');
   AUDIO.silenceEngine();
-  hudEl.classList.remove('active');document.getElementById('sp-hud1').classList.remove('active');document.getElementById('sp-hud2').classList.remove('active');bridgeHudEl.classList.remove('active');wrongWayEl.classList.remove('active');rearWarnEl.classList.remove('active');document.getElementById('star-fx').classList.remove('active');
+  document.body.classList.remove('sp-active');hudEl.classList.remove('active');document.getElementById('sp-hud1').classList.remove('active');document.getElementById('sp-hud2').classList.remove('active');bridgeHudEl.classList.remove('active');wrongWayEl.classList.remove('active');rearWarnEl.classList.remove('active');document.getElementById('star-fx').classList.remove('active');
   document.getElementById('touch-controls').classList.remove('active');
   showScreen('screen-title');
 }
