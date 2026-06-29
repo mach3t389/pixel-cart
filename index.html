@@ -1621,7 +1621,7 @@ function useItem(k, backward){
       game.projectiles.push({x:px,y:py,angle:throwAngle+da,speed:info.speed,type:'KURKURE',ownerId:k.char.id,life:info.life,bounceCount:0});
     }
     AUDIO.beep(900,.05,.14,k.x,k.y);setTimeout(()=>AUDIO.beep(1100,.05,.12,k.x,k.y),40);setTimeout(()=>AUDIO.beep(1300,.08,.14,k.x,k.y),90);
-    if(isHuman(k)&&Math.random()<0.65)setTimeout(function(){SFX.play('throw_all',.75);},150);
+    if(isHuman(k))setTimeout(function(){SFX.play('throw_all',.75);},150);
     return;
   }
   if(type==='DOSA'){
@@ -1728,7 +1728,7 @@ function updateDroppedItems(dt){
 function playAttackerHit(ownerId,victim){
   const owner=game.karts.find(kk=>kk.char.id===ownerId);
   if(!isHuman(owner))return;
-  SFX.play('hit_all',1.0);
+  SFX.play(Math.random()<0.5?'throw_all':'hit_all',1.0);
   if(victim&&computePlace(victim)===1&&Math.random()<0.25)SFX.play('laugh',.9);
 }
 
