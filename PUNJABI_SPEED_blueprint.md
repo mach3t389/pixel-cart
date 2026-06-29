@@ -1,5 +1,5 @@
 # PUNJABI SPEED — Project Blueprint
-> Document de référence pour Claude Code · v2.1 · Mis à jour 2026-06-27
+> Document de référence pour Claude Code · v3.0 · Mis à jour 2026-06-29
 
 ---
 
@@ -12,7 +12,9 @@
 - **RAM** : 2 Go
 - **Écran** : Touchscreen intégré, résolution cible **1280×720** (fallback 1024×600)
 - **Entrée** : Écran tactile + manette USB (standard HID, ex. Xbox filaire)
-- **Distribution** : dossier `punjabi-speed/` sur clé USB / carte SD, chargé via Chrome (`file://`)
+- **Distribution** : deux méthodes (voir §16) —
+  1. **Dossier `punjabi-speed/`** sur clé USB / carte SD, chargé via Chrome (`file://`) — zéro build
+  2. **APK natif** (`com.vibecoding.punjabi`) construit via Cordova — icône + plein écran (voir §16bis)
 - **Cible secondaire** : téléphones mobiles (paysage) — voir §1ter
 
 ### Contraintes techniques absolues
@@ -266,12 +268,22 @@ Tous définis par des **splines Catmull-Rom** sur une grille monde 1000×1000. T
 
 | Clé | Emoji | Type | Effet | Stun (frames) |
 |-----|-------|------|-------|--------------|
-| CHAPPAL | 🩴 | Projectile avant rapide | Sandale homing, vitesse 9.5 | 60 |
-| CUILLERE | 🥄 | Projectile avant | Cuillère en bois, vitesse 6.0 | 42 |
-| OIGNON | 🧅 | Projectile homing + rebond | Cherche l'ennemi, rebondit 4× hors-piste, bloqué par une DOSA | 70 |
+| CHAPPAL | 🩴 | Projectile avant rapide | Sandale, vitesse 9.5 | 60 |
+| CUILLERE | 🥄 | Projectile avant | Cuillère en bois, vitesse **8.5** | 42 |
+| OIGNON | 🧅 | Projectile homing + rebond | Cherche l'ennemi, vitesse **6.0**, rebondit 4× hors-piste, bloqué par une DOSA | 70 |
 | DOSA | 🫓 | Posé derrière | Glisse les adversaires (comme une banane graisseuse) | 48 |
 | CHILI | 🌶️ | Effet immédiat | Boost de vitesse (boostTime=200) | — |
 | KURKURE | 🍿 | Scatter + bouclier | Lance 5 morceaux en cône avant + 2s de protection croustillante (starTime=120) | 35 |
+
+### Rareté (tirage pondéré)
+`ITEM_LIST` contient des doublons pour pondérer le tirage `pickRandom()`. Tous les items
+sont doublés **sauf OIGNON** (1 seule entrée) → l'oignon (homing) tombe ~2× moins souvent :
+`['CHAPPAL','CHAPPAL','CUILLERE','CUILLERE','OIGNON','DOSA','DOSA','CHILI','CHILI','KURKURE','KURKURE']`.
+
+### Lancer vers l'arrière (↓ + item)
+Les projectiles (CHAPPAL, CUILLERE, OIGNON) et le scatter KURKURE peuvent être lancés
+**vers l'arrière** en maintenant ↓ (ou D-pad bas manette) pendant l'usage. `useItem(k, backward)` :
+`throwAngle = k.angle + (backward ? π : 0)`. La notif affiche un préfixe `↩`.
 
 ### Système d'icônes pixelisées (`_buildPixelEmoji`)
 
@@ -370,32 +382,29 @@ score = finished ? (1e9 - finishTime) : (laps + u) * 1000
 ### Voix enregistrées (AAC/MP4 natif)
 **18 fichiers .m4a** dans `sfx/Sound effects 1/` — voix de personnages pour événements de jeu. Aucune conversion ffmpeg requise (Android WebView décode natif).
 
-**Architecture per-character avec fallbacks** (aucun son générique) :
+**Architecture à pools unifiés (depuis v3.0)** — *remplace l'ancien système per-character.*
+Toutes les voix sont **mélangées dans des pools partagés**, peu importe qui conduit le kart.
+`SFX.play(key, vol)` tire un clip aléatoire du pool et le joue (`cloneNode` → lectures superposables).
 
-| Événement | Char 0 (Boogerman) | Char 1 (Hanuman) | Char 2 (Babypie) | Char 3 (Aashi) |
-|-----------|---|---|---|---|
-| **Hit** | ✓ 2 clips | → Boogerman | ✓ 2 clips | ✓ 1 clip |
-| **Stun** | → Babypie | ✓ 1 clip | ✓ 1 clip | → Babypie |
-| **Drop** | → Hanuman | ✓ 1 clip | → Hanuman | → Hanuman |
-| **Win (1st)** | → Hanuman | ✓ 1 clip | → Hanuman | → Hanuman |
-| **Podium (2-3)** | → Babypie | → Babypie | ✓ 1 clip | → Babypie |
-| **Last (4th)** | ✓ 1 clip | ✓ 1 clip | → Hanuman | → Hanuman |
+| Pool (`SFX_FILES`) | Contenu | Déclenché par |
+|---|---|---|
+| `throw_all` | 6 voix « hit/laugh » mélangées | Lancer un item (toujours, +150ms) |
+| `hit_all` | 5 voix « hit » mélangées | Projectile touche quelqu'un (aléatoire avec `throw_all`) |
+| `stun_all` | 2 voix « got hit » | Victime étourdie (+100ms) |
+| `drop_all` | Banana (Hanuman) | Dépôt DOSA |
+| `boost` · `lap` · `wrongway` · `laugh` | clips uniques | Boost CHILI · tour · mauvais sens · taunt leader |
+| `win_any` · `win_1` · `podium_2` · `last_0` · `last_1` | clips de fin | Résultats (échelonnés par place) |
 
-**Évènements SFX** :
-- **Throw** : Objet lancé (générique)
-- **Boost** : Activation CHILI (générique)
-- **Lap** : Passage de tour (générique)
-- **Wrong way** : Mauvais sens 2s (générique)
-- **Laugh** : Taunt hit leader (générique)
-- **Hit** : Attaquant touche quelqu'un (voix perso + fallback)
-- **Stun** : Victime se fait toucher (voix perso + fallback, **delay +100ms** pour éviter chevauchement)
-- **Drop** : Dépôt DOSA (voix perso + fallback)
-- **Win/Last/Podium** : Fin de course (voix perso + fallback, **staggered by place**)
+- **Lancer** : `throw_all` joue **toujours** (un seul par lancer).
+- **Toucher quelqu'un** (`playAttackerHit`) : un seul son par victime, tiré au hasard entre `throw_all` et `hit_all`.
+- **Fin de course** : voix de résultat échelonnées (1er=500ms, podium=550ms, dernier=600ms).
 
-**Délais de son** : 
-- Stun décalée de +100ms (laisser passer le son de l'attaquant)
-- Voix fin course échelonnées : 1er=500ms, 2-3ème=550ms, 4ème=600ms (évite chevauchement)
-- `SFX.playChar(prefix, charId, fallbackCharId, vol, delayMs)`
+### Toggle VOIX / SYNTHÉ (Paramètres)
+Variable globale `useSynthSFX` (défaut `false`). Bouton dans Réglages (`set-sfx-recorded` / `set-sfx-synth`) :
+- **🎤 VOIX** (`useSynthSFX=false`) : voix .m4a enregistrées (comportement par défaut).
+- **🔊 SYNTHÉ** (`useSynthSFX=true`) : `SFX.play()` retourne `false` immédiatement → **toutes les voix coupées**, seuls les `AUDIO.beep()` synthétisés jouent.
+
+> Garde-fou : `SFX.play()` commence par `if(useSynthSFX)return false;`. Les `AUDIO.beep()` ne sont jamais affectés.
 
 ---
 
@@ -423,13 +432,39 @@ Toutes les chaînes UI sont traduites dans les 4 langues : menus, HUD, notificat
 
 ### En course
 ```
-Clavier   : ← → (direction) · ↑ (gaz) · ↓ (frein) · Shift (item)
-Manette   : Gamepad API — axes[0] steer, RT gaz, LT frein, A item, B retour
-Tactile   : Boutons ◀ ▶ (direction) · A (gaz) · B (frein) · USE (item)
+Clavier J1 : ← → (direction) · ↑ (gaz) · ↓ (frein/recul) · Shift (item)
+Clavier J2 : A D (direction) · W (gaz) · S (frein) · Ctrl (item)   [split-screen]
+Tactile    : Joystick analogique (gauche) + cluster A/B/USE (droite)
 ```
 
-Multi-touch supporté. Boutons tactiles larges (min 80×80px) pour usage en voiture.
-La référence des contrôles est listée dans **Paramètres** (grille ⌨ Clavier / 🎮 Manette), plus dans l'écran titre.
+**Mapping manette unifié (`_buildGP`)** — normalise NES et Xbox dans un même état :
+
+| Action | Manette NES / générique | Manette Xbox |
+|---|---|---|
+| Direction | D-pad ← → (`btn 14/15`) ou `axes[0]` | Stick gauche `axes[0]` |
+| Accélérer | **A** = `btn(1)` | **RT** (`axes`/`btn 7`) |
+| Freiner / reculer | **B** = `btn(0)` | **LT** (`axes`/`btn 6`) |
+| Utiliser item | **X** = `btn(3)` | **X** = `btn(3)` |
+| Lancer derrière | ↓ (D-pad bas) + X | ↓ + X |
+| Pause | Start (`btn 8/9`) | Start |
+
+> Le mapping item est `btn(3)` (X sur la manette NES de l'utilisateur), volontairement **étroit**
+> pour ne pas déclencher de son en tournant. La réf. est dans **Paramètres** : trois cartes
+> côte à côte ⌨ CLAVIER · 🎮 MANETTE NES · 🎮 MANETTE XBOX (la carte NES affiche le nom de
+> la manette branchée via `updateGamepadUI`).
+
+### Double manette (split-screen)
+`INPUT.update()` scanne `navigator.getGamepads()` : la 1re manette → J1 (`gamepad`),
+la 2e → J2 (`gamepad2`). Chacune passe par `_buildGP`. En split-screen, le clavier J1 garde
+les flèches uniquement (WASD réservé à J2). Les getters `p2left/p2right/p2accel/...` et
+`p2steerAxis/p2accelAxis` routent l'entrée J2. La navigation menu (`pollMenuGamepad`) lit
+les deux manettes (front partagé `_navPrev` pour éviter le double-déclenchement).
+
+### Marche arrière
+Maintenir le frein une fois le kart à l'arrêt complet le fait **reculer** (vitesse négative
+plafonnée). Géré dans `updatePlayer`/`updateP2`.
+
+Multi-touch supporté. Boutons tactiles larges pour usage en voiture.
 
 ### Navigation des menus (modèle de focus unifié)
 Chaque écran retourne une liste de « lignes » via `menuRows()` :
@@ -456,6 +491,22 @@ Barre semi-transparente en haut :
 - Flash jaune au passage de tour
 - Minimap (coin bas-droit) : circuit avec position des karts
 - Bouton `⌂` (top-right in-game) → ouvre le menu PAUSE
+
+### HUD split-screen (2 joueurs)
+En split-screen le `#hud` mono-joueur est **masqué** (`body.sp-active #hud{display:none!important}`)
+et remplacé par **deux barres DOM** : `#sp-hud1` (haut, étiquette bleue **J1**) et `#sp-hud2`
+(bas, étiquette rouge **J2**, positionnée à `top:48.6%`). Chaque barre montre : tag, nom du perso,
+tour, item, chrono partagé (`sp-time`) et position. Mis à jour par `_spHudKart()` dans `drawHUD()`.
+
+> **Piège résolu (v3.0)** : il existait un 2e HUD dessiné sur le canvas (`drawSplitHUD`) qui se
+> superposait aux barres DOM → double barre. `drawSplitHUD` ne dessine plus que l'alerte « mauvais
+> sens » par viewport. De plus `VP2Y = VPH` (175) supprime la bande noire séparatrice de 10px ;
+> `#sp-hud2` sert d'unique séparateur visuel.
+
+### Notifications split-screen
+`showNotif(text, dur, icon, forP2)` : `#item-notif` (J1, repositionné à 25% en split) et
+`#item-notif-p2` (J2, à 75%). Tous les évènements d'item déclenchent la notif pour **J1 et J2**
+(`if(k.isPlayer||k.isP2)`).
 
 ---
 
@@ -544,11 +595,73 @@ Barre semi-transparente en haut :
 
 ---
 
+## 16bis. Build & mise à jour de l'APK natif (Cordova)
+
+L'app native est un wrapper **Cordova** dans `build-apk/` qui empaquette le jeu web dans
+un `.apk` installable (icône, plein écran, pas de barre Chrome). ID : `com.vibecoding.punjabi`.
+
+### Environnement (déjà installé sur le poste de dev)
+- **JDK** : `C:\Program Files\Android\Android Studio\jbr`
+- **Android SDK** : `C:\Users\BUREAU-ALEXIS\AppData\Local\Android\Sdk`
+- **Cordova** : via `npx` (cordova-android, wrapper Gradle 8.14.2 en cache)
+
+### Procédure de mise à jour (à refaire à chaque changement du jeu)
+**Dans une vraie fenêtre PowerShell** (le démon Gradle a besoin d'une console interactive
+pour sa socket loopback — il échoue dans un shell non-interactif) :
+
+```powershell
+# 1. Copier le jeu à jour dans le wrapper
+cd "D:\Vibe Coding\punjabi-speed"
+Copy-Item index.html,manifest.json,service-worker.js,menu-music.mp3 build-apk\www\ -Force
+Remove-Item build-apk\www\sfx -Recurse -Force; Copy-Item sfx build-apk\www\ -Recurse
+
+# 2. Construire l'APK
+cd build-apk
+npx cordova build android
+```
+
+> Si `cordova build` ne trouve pas Gradle, lancer le wrapper directement :
+> `cd platforms\android ; .\gradlew.bat assembleDebug`
+> (s'assurer que `$env:JAVA_HOME` et `$env:ANDROID_HOME` pointent vers les chemins ci-dessus).
+
+### Résultat
+```
+build-apk\platforms\android\app\build\outputs\apk\debug\app-debug.apk   (~5.2 Mo)
+```
+Copier ce fichier sur la clé USB → installer sur la radio (autoriser « sources inconnues »).
+Comme l'`id` ne change pas, réinstaller **met à jour** le jeu en conservant l'app.
+
+### Notes
+- `build-apk/` est **git-ignored** (node_modules, platforms, APK ne vont pas sur GitHub).
+- Pour un *vrai* numéro de version d'update, bumper `version` + `android-versionCode` dans
+  `build-apk/config.xml` (sinon réinstall directe sur le même versionCode = OK quand même).
+- `cordova prepare android` (sans build) suffit pour juste re-synchroniser `www/` → projet natif.
+
+---
+
 ## 17. Ce qui reste hors scope
 
 - Sauvegarde des scores (localStorage utilisé uniquement pour la langue)
-- Multijoueur réseau
+- Multijoueur **réseau** (le split-screen local 2 joueurs existe, voir §13/§14)
 - Ghost / mode chrono
 - Circuits supplémentaires (au-delà des 3 existants)
 - Personnalisation de kart (couleurs, etc.)
-- APK natif (le chargement `file://` + PWA couvrent le besoin)
+
+> *Note : l'APK natif n'est plus hors-scope — il est construit via Cordova (§16bis), en
+> complément du chargement `file://` + PWA.*
+
+---
+
+## 18. Historique des changements
+
+### v3.0 — 2026-06-29
+- **Split-screen 2 joueurs** : double manette (J1/J2), HUD DOM J1/J2, notifs J1/J2,
+  marche arrière, items P2, fin de course attend que **les deux** joueurs terminent.
+- **Fix double barre HUD** en split (suppression du HUD canvas redondant, `VP2Y=VPH`).
+- **Audio refondu** : pools de voix unifiés (`throw_all`/`hit_all`/`stun_all`/`drop_all`)
+  remplaçant le système per-character ; toggle **VOIX / SYNTHÉ** (`useSynthSFX`) dans Réglages.
+- **Input** : mapping NES (A=gaz, B=frein, X=item) + Xbox, lancer arrière (↓+item),
+  cartes contrôles NES/Xbox côte à côte dans Réglages.
+- **Items** : cuillère 6.0→**8.5**, oignon 4.0→**6.0** + plus **rare** (tirage pondéré).
+- **APK natif** Cordova (`com.vibecoding.punjabi`) — voir §16bis.
+- **i18n** : nouvelles clés `set_sfx_mode`, `sfx_voice`, `sfx_synth` (FR/EN/PA/HI).
