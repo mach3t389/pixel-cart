@@ -1133,7 +1133,7 @@ const INPUT={
       // Frein : B physique NES=btn(0), LT Xbox
       const dBrake=ltVal>0.15||btn(0);
       // Item : X/Y/LB/RB uniquement (A/B réservés gaz/frein)
-      const dUse=btn(2); // X uniquement — btn(3/4/5) conflictent avec D-pad sur certaines NES chinoises
+      const dUse=btn(3); // X physique sur cette manette NES = btn(3)
       // Start(9) / Options(9) pour pause — détection front montant
       const dStart=btn(9)||btn(8);
       if(dStart&&!this._gpPrev.start){
