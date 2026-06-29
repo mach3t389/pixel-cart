@@ -366,9 +366,16 @@ input[type=range].pk-slider::-moz-range-thumb{width:20px;height:20px;border-radi
       </div>
       <div class="ctrl-block" id="ctrl-gamepad-block">
         <div class="ctrl-block-label">🎮 MANETTE</div>
+        <div class="ctrl-row"><span class="ctrl-key" style="font-size:9px;opacity:.55">NES/générique</span></div>
         <div class="ctrl-row"><span class="ctrl-key">← →</span><span class="ctrl-desc" data-i18n="ctrl_steer">Diriger</span></div>
         <div class="ctrl-row"><span class="ctrl-key">A</span><span class="ctrl-desc" data-i18n="ctrl_gas">Accélérer</span></div>
         <div class="ctrl-row"><span class="ctrl-key">B</span><span class="ctrl-desc" data-i18n="ctrl_brake">Freiner</span></div>
+        <div class="ctrl-row"><span class="ctrl-key">X</span><span class="ctrl-desc" data-i18n="ctrl_item">Utiliser item</span></div>
+        <div class="ctrl-row"><span class="ctrl-key">↓ + X</span><span class="ctrl-desc" data-i18n="ctrl_item_back">Lancer derrière</span></div>
+        <div class="ctrl-row" style="margin-top:6px"><span class="ctrl-key" style="font-size:9px;opacity:.55">Xbox</span></div>
+        <div class="ctrl-row"><span class="ctrl-key">L-stick</span><span class="ctrl-desc" data-i18n="ctrl_steer">Diriger</span></div>
+        <div class="ctrl-row"><span class="ctrl-key">RT</span><span class="ctrl-desc" data-i18n="ctrl_gas">Accélérer</span></div>
+        <div class="ctrl-row"><span class="ctrl-key">LT</span><span class="ctrl-desc" data-i18n="ctrl_brake">Freiner</span></div>
         <div class="ctrl-row"><span class="ctrl-key">X</span><span class="ctrl-desc" data-i18n="ctrl_item">Utiliser item</span></div>
         <div class="ctrl-row"><span class="ctrl-key">↓ + X</span><span class="ctrl-desc" data-i18n="ctrl_item_back">Lancer derrière</span></div>
       </div>
@@ -1182,23 +1189,13 @@ function updateGamepadUI(){
     if(game.state===STATE.RACING||game.state===STATE.COUNTDOWN)
       el.classList.add('active');
   }
-  // Met à jour le bloc contrôles selon le type de manette
+  // Met à jour le label si une manette est connectée
   const block=document.getElementById('ctrl-gamepad-block');
   if(!block)return;
   const pads=navigator.getGamepads?navigator.getGamepads():null;
   let gp=null; if(pads){for(let i=0;i<pads.length;i++){if(pads[i]&&pads[i].connected){gp=pads[i];break;}}}
-  const isXbox=gp&&/(xbox|xinput|045e)/i.test(gp.id);
-  const steer=isXbox?'L-stick':'← →';
-  const gas=isXbox?'RT':'A';
-  const brake=isXbox?'LT':'B';
-  const item=isXbox?'X / Y':'X';
-  block.innerHTML='<div class="ctrl-block-label">🎮 MANETTE'+(gp?' <span style="font-size:9px;opacity:.6">('+gp.id.slice(0,18)+')</span>':'')+'</div>'
-    +'<div class="ctrl-row"><span class="ctrl-key">'+steer+'</span><span class="ctrl-desc">'+T('ctrl_steer')+'</span></div>'
-    +'<div class="ctrl-row"><span class="ctrl-key">'+gas+'</span><span class="ctrl-desc">'+T('ctrl_gas')+'</span></div>'
-    +'<div class="ctrl-row"><span class="ctrl-key">'+brake+'</span><span class="ctrl-desc">'+T('ctrl_brake')+'</span></div>'
-    +'<div class="ctrl-row"><span class="ctrl-key">'+item+'</span><span class="ctrl-desc">'+T('ctrl_item')+'</span></div>'
-    +'<div class="ctrl-row"><span class="ctrl-key">↓ + '+item+'</span><span class="ctrl-desc">'+T('ctrl_item_back')+'</span></div>'
-    +'<div class="ctrl-row"><span class="ctrl-key">B</span><span class="ctrl-desc">'+T('ctrl_back')+'</span></div>';
+  const label=block.querySelector('.ctrl-block-label');
+  if(label)label.textContent='🎮 MANETTE'+(gp?' ('+gp.id.slice(0,16)+')':'');
 }
 
 window.addEventListener('gamepadconnected',()=>{
