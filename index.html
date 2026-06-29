@@ -364,13 +364,13 @@ input[type=range].pk-slider::-moz-range-thumb{width:20px;height:20px;border-radi
         <div class="ctrl-row"><span class="ctrl-key">Shift</span><span class="ctrl-desc" data-i18n="ctrl_item">Utiliser item</span></div>
         <div class="ctrl-row"><span class="ctrl-key">Entrée</span><span class="ctrl-desc" data-i18n="ctrl_confirm">Valider menu</span></div>
       </div>
-      <div class="ctrl-block">
-        <div class="ctrl-block-label" data-i18n="ctrl_gamepad">🎮 MANETTE</div>
-        <div class="ctrl-row"><span class="ctrl-key">L-stick</span><span class="ctrl-desc" data-i18n="ctrl_steer">Diriger</span></div>
-        <div class="ctrl-row"><span class="ctrl-key">RT</span><span class="ctrl-desc" data-i18n="ctrl_gas">Accélérer</span></div>
-        <div class="ctrl-row"><span class="ctrl-key">LT</span><span class="ctrl-desc" data-i18n="ctrl_brake">Freiner</span></div>
-        <div class="ctrl-row"><span class="ctrl-key">A</span><span class="ctrl-desc" data-i18n="ctrl_item">Utiliser item</span></div>
-        <div class="ctrl-row"><span class="ctrl-key">B</span><span class="ctrl-desc" data-i18n="ctrl_back">Retour</span></div>
+      <div class="ctrl-block" id="ctrl-gamepad-block">
+        <div class="ctrl-block-label">🎮 MANETTE</div>
+        <div class="ctrl-row"><span class="ctrl-key">← →</span><span class="ctrl-desc" data-i18n="ctrl_steer">Diriger</span></div>
+        <div class="ctrl-row"><span class="ctrl-key">A</span><span class="ctrl-desc" data-i18n="ctrl_gas">Accélérer</span></div>
+        <div class="ctrl-row"><span class="ctrl-key">B</span><span class="ctrl-desc" data-i18n="ctrl_brake">Freiner</span></div>
+        <div class="ctrl-row"><span class="ctrl-key">X</span><span class="ctrl-desc" data-i18n="ctrl_item">Utiliser item</span></div>
+        <div class="ctrl-row"><span class="ctrl-key">↓ + X</span><span class="ctrl-desc" data-i18n="ctrl_item_back">Lancer derrière</span></div>
       </div>
     </div>
     <button class="go-btn" id="settings-back" style="margin-top:20px" data-i18n="back">◀ RETOUR</button>
@@ -511,7 +511,7 @@ const STRINGS={
     stats_btn:'📊 STATISTIQUES', stats_title:'📊 STATISTIQUES', back:'◀ RETOUR',
     settings_btn:'⚙ PARAMÈTRES', settings_title:'⚙ PARAMÈTRES', set_music_vol:'VOLUME MUSIQUE', set_sfx_vol:'VOLUME EFFETS',
     ctrl_title:'CONTRÔLES', ctrl_keyboard:'⌨ CLAVIER', ctrl_gamepad:'🎮 MANETTE',
-    ctrl_steer:'Diriger', ctrl_gas:'Accélérer', ctrl_brake:'Freiner', ctrl_item:'Utiliser item', ctrl_confirm:'Valider menu', ctrl_back:'Retour',
+    ctrl_steer:'Diriger', ctrl_gas:'Accélérer', ctrl_brake:'Freiner', ctrl_item:'Utiliser item', ctrl_item_back:'Lancer derrière', ctrl_confirm:'Valider menu', ctrl_back:'Retour',
     stats_reset:'Réinitialiser les statistiques',
     choose_diff:'CHOISIS LA DIFFICULTÉ',
     diff_easy:'FACILE', diff_normal:'NORMAL', diff_hard:'DIFFICILE',
@@ -545,7 +545,7 @@ const STRINGS={
     stats_btn:'📊 STATS', stats_title:'📊 STATISTICS', back:'◀ BACK',
     settings_btn:'⚙ SETTINGS', settings_title:'⚙ SETTINGS', set_music_vol:'MUSIC VOLUME', set_sfx_vol:'SFX VOLUME',
     ctrl_title:'CONTROLS', ctrl_keyboard:'⌨ KEYBOARD', ctrl_gamepad:'🎮 GAMEPAD',
-    ctrl_steer:'Steer', ctrl_gas:'Accelerate', ctrl_brake:'Brake', ctrl_item:'Use item', ctrl_confirm:'Confirm menu', ctrl_back:'Back',
+    ctrl_steer:'Steer', ctrl_gas:'Accelerate', ctrl_brake:'Brake', ctrl_item:'Use item', ctrl_item_back:'Throw backward', ctrl_confirm:'Confirm menu', ctrl_back:'Back',
     stats_reset:'Reset statistics',
     choose_diff:'CHOOSE DIFFICULTY',
     diff_easy:'EASY', diff_normal:'NORMAL', diff_hard:'HARD',
@@ -579,7 +579,7 @@ const STRINGS={
     stats_btn:'📊 ਅੰਕੜੇ', stats_title:'📊 ਅੰਕੜੇ', back:'◀ ਵਾਪਸ',
     settings_btn:'⚙ ਸੈਟਿੰਗਾਂ', settings_title:'⚙ ਸੈਟਿੰਗਾਂ', set_music_vol:'ਸੰਗੀਤ ਆਵਾਜ਼', set_sfx_vol:'SFX ਆਵਾਜ਼',
     ctrl_title:'ਕੰਟਰੋਲ', ctrl_keyboard:'⌨ ਕੀਬੋਰਡ', ctrl_gamepad:'🎮 ਗੇਮਪੈਡ',
-    ctrl_steer:'ਦਿਸ਼ਾ', ctrl_gas:'ਤੇਜ਼ ਕਰੋ', ctrl_brake:'ਬ੍ਰੇਕ', ctrl_item:'ਆਈਟਮ ਵਰਤੋ', ctrl_confirm:'ਪੁਸ਼ਟੀ', ctrl_back:'ਵਾਪਸ',
+    ctrl_steer:'ਦਿਸ਼ਾ', ctrl_gas:'ਤੇਜ਼ ਕਰੋ', ctrl_brake:'ਬ੍ਰੇਕ', ctrl_item:'ਆਈਟਮ ਵਰਤੋ', ctrl_item_back:'ਪਿੱਛੇ ਸੁੱਟੋ', ctrl_confirm:'ਪੁਸ਼ਟੀ', ctrl_back:'ਵਾਪਸ',
     stats_reset:'ਅੰਕੜਿਆਂ ਨੂੰ ਰੀਸੈਟ ਕਰੋ',
     choose_diff:'ਮੁਸ਼ਕਿਲ ਚੁਣੋ',
     diff_easy:'ਆਸਾਨ', diff_normal:'ਸਧਾਰਣ', diff_hard:'ਮੁਸ਼ਕਲ',
@@ -1132,7 +1132,7 @@ const INPUT={
       if(dStart&&!this._gpPrev.start){
         if(game.state===STATE.RACING||game.state===STATE.PAUSE)togglePause();
       }
-      if(dUse&&!this._gpPrev.use&&game.state===STATE.RACING)useItem(game.player);
+      if(dUse&&!this._gpPrev.use&&game.state===STATE.RACING)useItem(game.player,dPadDown);
       this._gpPrev.start=dStart;
       this._gpPrev.use=dUse;
       // Axis brut pour steering analogique — axes[0] si dispo, sinon D-pad binaire (btn14/15)
@@ -1182,6 +1182,25 @@ function updateGamepadUI(){
     if(game.state===STATE.RACING||game.state===STATE.COUNTDOWN)
       el.classList.add('active');
   }
+  // Met à jour le bloc contrôles selon le type de manette
+  const block=document.getElementById('ctrl-gamepad-block');
+  if(!block)return;
+  const pads=navigator.getGamepads?navigator.getGamepads():null;
+  let gp=null; if(pads){for(let i=0;i<pads.length;i++){if(pads[i]&&pads[i].connected){gp=pads[i];break;}}}
+  const isXbox=gp&&/(xbox|xinput|045e)/i.test(gp.id);
+  const T=LANG[lang]||LANG.fr;
+  const steer=isXbox?'L-stick':'← →';
+  const gas=isXbox?'RT':'A';
+  const brake=isXbox?'LT':'B';
+  const item=isXbox?'X / Y':'X';
+  const back=isXbox?'B':'B';
+  block.innerHTML=`<div class="ctrl-block-label">🎮 MANETTE${gp?' <span style="font-size:9px;opacity:.6">(${gp.id.slice(0,18)})</span>':''}</div>`
+    +`<div class="ctrl-row"><span class="ctrl-key">${steer}</span><span class="ctrl-desc">${T.ctrl_steer||'Diriger'}</span></div>`
+    +`<div class="ctrl-row"><span class="ctrl-key">${gas}</span><span class="ctrl-desc">${T.ctrl_gas||'Accélérer'}</span></div>`
+    +`<div class="ctrl-row"><span class="ctrl-key">${brake}</span><span class="ctrl-desc">${T.ctrl_brake||'Freiner'}</span></div>`
+    +`<div class="ctrl-row"><span class="ctrl-key">${item}</span><span class="ctrl-desc">${T.ctrl_item||'Utiliser item'}</span></div>`
+    +`<div class="ctrl-row"><span class="ctrl-key">↓ + ${item}</span><span class="ctrl-desc">${T.ctrl_item_back||'Lancer derrière'}</span></div>`
+    +`<div class="ctrl-row"><span class="ctrl-key">${back}</span><span class="ctrl-desc">${T.ctrl_back||'Retour menu'}</span></div>`;
 }
 
 window.addEventListener('gamepadconnected',()=>{
@@ -1226,10 +1245,10 @@ window.addEventListener('keydown',e=>{
   }
   // Utiliser l'item en course (une seule fois par appui)
   if((e.code==='ShiftLeft'||e.code==='ShiftRight')&&game.state===STATE.RACING&&!e.repeat){
-    useItem(game.player);
+    useItem(game.player,!!(INPUT.keyboard['ArrowDown']||INPUT.keyboard['KeyS']));
   }
   if((e.code==='ControlLeft'||e.code==='ControlRight')&&game.state===STATE.RACING&&!e.repeat){
-    if(game.splitScreen&&game.p2)useItem(game.p2);else useItem(game.player);
+    if(game.splitScreen&&game.p2)useItem(game.p2,!!(INPUT.keyboard['KeyS']));else useItem(game.player,!!(INPUT.keyboard['ArrowDown']||INPUT.keyboard['KeyS']));
   }
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
 });
@@ -1247,7 +1266,7 @@ document.getElementById('t-use').addEventListener('pointerdown',e=>{
   e.preventDefault();
   document.getElementById('t-use').classList.add('pressed');
   AUDIO.init();AUDIO.resume();
-  if(game.state===STATE.RACING)useItem(game.player);
+  if(game.state===STATE.RACING)useItem(game.player,false);
 });
 document.getElementById('t-use').addEventListener('pointerup',e=>{document.getElementById('t-use').classList.remove('pressed');e.preventDefault();});
 document.getElementById('t-use').addEventListener('pointerleave',e=>{document.getElementById('t-use').classList.remove('pressed');});
@@ -1575,8 +1594,8 @@ function updateItemBoxes(dt){
   }
 }
 
-// Utiliser l'item du kart
-function useItem(k){
+// Utiliser l'item du kart — backward=true : lancer vers l'arrière (↓+X)
+function useItem(k, backward){
   if(!k.item||k.stunTime>0)return;
   const type=k.item, info=ITEM_INFO[type];
   k.item=null;
@@ -1588,35 +1607,36 @@ function useItem(k){
     return;
   }
   if(type==='KURKURE'){
-    // Scatter : 5 morceaux en cône avant + mini invincibilité croustillante
-    k.starTime=120; // 2s de protection Kurkure
+    k.starTime=120;
     if(k.isPlayer){showNotif("🍿 KURKURE!",900,'KURKURE');document.getElementById('star-fx').classList.add('active');}
     const angles=[-0.45,-0.22,0,0.22,0.45];
-    const px=k.x+Math.cos(k.angle)*20, py=k.y+Math.sin(k.angle)*20;
+    const throwAngle=k.angle+(backward?Math.PI:0);
+    const px=k.x+Math.cos(throwAngle)*20, py=k.y+Math.sin(throwAngle)*20;
     for(const da of angles){
-      game.projectiles.push({x:px,y:py,angle:k.angle+da,speed:info.speed,type:'KURKURE',ownerId:k.char.id,life:info.life,bounceCount:0});
+      game.projectiles.push({x:px,y:py,angle:throwAngle+da,speed:info.speed,type:'KURKURE',ownerId:k.char.id,life:info.life,bounceCount:0});
     }
     AUDIO.beep(900,.05,.14,k.x,k.y);setTimeout(()=>AUDIO.beep(1100,.05,.12,k.x,k.y),40);setTimeout(()=>AUDIO.beep(1300,.08,.14,k.x,k.y),90);
     if(isHuman(k)){SFX.play('throw',.8);if(Math.random()<0.65)SFX.playChar('throw',k.char.id,'throw_voice',.75,150);}
     return;
   }
   if(type==='DOSA'){
-    // Déposer derrière le kart (glissant comme une banane graisseuse)
     const bx=k.x-Math.cos(k.angle)*28, by=k.y-Math.sin(k.angle)*28;
     game.droppedItems.push({x:bx,y:by,type:'DOSA',life:900,ownerId:k.char.id});
     AUDIO.beep(380,.14,.12,k.x,k.y);setTimeout(()=>AUDIO.beep(280,.10,.10,k.x,k.y),80);
-    if(isHuman(k))SFX.playChar('drop',k.char.id,1,.85); // fallback à Hanuman
+    if(isHuman(k))SFX.playChar('drop',k.char.id,1,.85);
     if(k.isPlayer)showNotif("🫓 DOSA!",600,'DOSA');
     return;
   }
-  // Projectiles en avant : CHAPPAL, CUILLERE, OIGNON
-  const px=k.x+Math.cos(k.angle)*20, py=k.y+Math.sin(k.angle)*20;
-  game.projectiles.push({x:px,y:py,angle:k.angle,speed:info.speed,type,ownerId:k.char.id,life:info.life,bounceCount:type==='OIGNON'?4:0});
+  // Projectiles : avant par défaut, arrière si ↓+X
+  const throwAngle=k.angle+(backward?Math.PI:0);
+  const px=k.x+Math.cos(throwAngle)*20, py=k.y+Math.sin(throwAngle)*20;
+  game.projectiles.push({x:px,y:py,angle:throwAngle,speed:info.speed,type,ownerId:k.char.id,life:info.life,bounceCount:type==='OIGNON'?4:0});
   if(type==='CHAPPAL'){AUDIO.beep(520,.08,.15,k.x,k.y);setTimeout(()=>AUDIO.beep(320,.06,.12,k.x,k.y),60);}
   else if(type==='CUILLERE'){AUDIO.beep(740,.1,.14,k.x,k.y);}
-  else{AUDIO.beep(500,.08,.13,k.x,k.y);} // OIGNON
-  if(isHuman(k))SFX.play('throw',.8);
-  if(k.isPlayer)showNotif(type==='CHAPPAL'?"🩴 CHAPPAL!":type==='CUILLERE'?"🥄 CUILLÈRE!":"🧅 OIGNON!",600,type);
+  else{AUDIO.beep(500,.08,.13,k.x,k.y);}
+  if(isHuman(k)){SFX.play('throw',.8);if(Math.random()<0.65)SFX.playChar('throw',k.char.id,'throw_voice',.75,150);}
+  const label=type==='CHAPPAL'?"🩴 CHAPPAL!":type==='CUILLERE'?"🥄 CUILLÈRE!":"🧅 OIGNON!";
+  if(k.isPlayer)showNotif((backward?'↩ ':'')+label,600,type);
 }
 
 // Mise à jour des projectiles
@@ -2222,7 +2242,7 @@ function renderStats(){
   g.innerHTML=html;
 }
 function goToStats(){game.state=STATE.STATS;renderStats();showScreen('screen-stats');}
-function goToSettings(){game.state=STATE.SETTINGS;showScreen('screen-settings');}
+function goToSettings(){game.state=STATE.SETTINGS;showScreen('screen-settings');updateGamepadUI();}
 
 let sfxVolume=0.80; // volume effets sonores (0–1)
 function initSettings(){
