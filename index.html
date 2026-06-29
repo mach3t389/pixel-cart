@@ -1034,29 +1034,17 @@ const AUDIO={
    Une variante propre à un perso ne joue QUE pour ce perso ; sinon repli générique. */
 const SFX_BASE='sfx/Sound effects 1/';
 const SFX_FILES={
-  // génériques (n'importe quel humain)
-  throw:       ['Throw object.m4a'],
-  // Voix au lancer par perso — fallback générique inclut Aashi pour tous les persos
-  throw_voice: ['hit somebody (Aashi).m4a','Laughing.m4a'],
-  throw_0:     ['Hit somebody (Mr Boogerman).m4a','Hit somebody 3 (Boogerman).m4a'],
-  throw_2:     ['Hit somebody (babypie).m4a','Hit somebody 2 (Babypie).m4a'],
-  throw_3:     ['hit somebody (Aashi).m4a'],
+  // Pools unifiés — toutes les voix mélangées, peu importe qui conduit
+  throw_all:['hit somebody (Aashi).m4a','Laughing.m4a','Hit somebody (Mr Boogerman).m4a','Hit somebody 3 (Boogerman).m4a','Hit somebody (babypie).m4a','Hit somebody 2 (Babypie).m4a'],
+  hit_all:  ['Hit somebody (Mr Boogerman).m4a','Hit somebody 3 (Boogerman).m4a','Hit somebody (babypie).m4a','Hit somebody 2 (Babypie).m4a','hit somebody (Aashi).m4a'],
+  stun_all: ['Got hit and slipping (babypie).m4a','Got it (Hanuman).m4a'],
+  drop_all: ['Banana (Hanuman).m4a'],
   boost:    ['Boost.m4a'],
   lap:      ['Lap.m4a'],
   wrongway: ['Wrong way.m4a'],
   laugh:    ['Laughing.m4a'],
   win_any:  ['First position (All).m4a'],
-  // coups réussis — pool par personnage (rotation aléatoire interne)
-  hit_0:    ['Hit somebody (Mr Boogerman).m4a','Hit somebody 3 (Boogerman).m4a'],
-  hit_2:    ['Hit somebody (babypie).m4a','Hit somebody 2 (Babypie).m4a'],
-  hit_3:    ['hit somebody (Aashi).m4a'],
-  // dépôt de DOSA — Hanuman a une voix dédiée ("Banana")
-  drop_1:   ['Banana (Hanuman).m4a'],
-  // se faire toucher / glisser — Babypie
-  stun_2:   ['Got hit and slipping (babypie).m4a'],
-  // se faire toucher — Hanuman
-  stun_1:   ['Got it (Hanuman).m4a'],
-  // résultats par personnage
+  // résultats (gardés par perso — moment unique)
   win_1:    ['First place (Hanuman).m4a'],
   podium_2: ['Podium (Babypie).m4a'],
   last_0:   ['Last position (Boogerman).m4a'],
@@ -1575,7 +1563,7 @@ function checkPickups(){
         box.respawnIn=ITEM_RESPAWN;
         k.item=pickRandom(ITEM_LIST);
         AUDIO.beep(880,.08,.14,k.x,k.y);
-        if(isHuman(k))SFX.playChar('pickup',k.char.id,null,.85);
+        if(isHuman(k))SFX.play('laugh',.6);
         if(k.isPlayer)showNotif(" "+ITEM_INFO[k.item].label,600,k.item);
       }
     }
@@ -1611,14 +1599,14 @@ function useItem(k, backward){
       game.projectiles.push({x:px,y:py,angle:throwAngle+da,speed:info.speed,type:'KURKURE',ownerId:k.char.id,life:info.life,bounceCount:0});
     }
     AUDIO.beep(900,.05,.14,k.x,k.y);setTimeout(()=>AUDIO.beep(1100,.05,.12,k.x,k.y),40);setTimeout(()=>AUDIO.beep(1300,.08,.14,k.x,k.y),90);
-    if(isHuman(k)&&Math.random()<0.65)SFX.playChar('throw',k.char.id,'throw_voice',.75,150);
+    if(isHuman(k)&&Math.random()<0.65)setTimeout(function(){SFX.play('throw_all',.75);},150);
     return;
   }
   if(type==='DOSA'){
     const bx=k.x-Math.cos(k.angle)*28, by=k.y-Math.sin(k.angle)*28;
     game.droppedItems.push({x:bx,y:by,type:'DOSA',life:900,ownerId:k.char.id});
     AUDIO.beep(380,.14,.12,k.x,k.y);setTimeout(()=>AUDIO.beep(280,.10,.10,k.x,k.y),80);
-    if(isHuman(k))SFX.playChar('drop',k.char.id,1,.85);
+    if(isHuman(k))SFX.play('drop_all',.85);
     if(k.isPlayer)showNotif("🫓 DOSA!",600,'DOSA');
     return;
   }
@@ -1718,7 +1706,7 @@ function updateDroppedItems(dt){
 function playAttackerHit(ownerId,victim){
   const owner=game.karts.find(kk=>kk.char.id===ownerId);
   if(!isHuman(owner))return;
-  SFX.playChar('hit',owner.char.id,0,1.0); // fallback à Boogerman si perso n'a pas de voix
+  SFX.play('hit_all',1.0);
   if(victim&&computePlace(victim)===1&&Math.random()<0.25)SFX.play('laugh',.9);
 }
 
@@ -1728,7 +1716,7 @@ function stunKart(k,type){
   const dur={CHAPPAL:60,CUILLERE:42,OIGNON:70,DOSA:48,KURKURE:35}[type]||50;
   k.stunTime=dur;
   AUDIO.beep(220,.22,.18,k.x,k.y);
-  if(isHuman(k))SFX.playChar('stun',k.char.id,2,1.0,100); // delay 100ms pour éviter chevauchement
+  if(isHuman(k))setTimeout(function(){SFX.play('stun_all',1.0);},100);
   if(k.isPlayer){showNotif("💥 TOUCHÉ!",700);hudEl.classList.add('stun');setTimeout(()=>hudEl.classList.remove('stun'),700);}
 }
 
