@@ -93,7 +93,7 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 .sp-hud{position:absolute;left:0;right:0;display:none;padding:3px 10px;background:rgba(0,0,0,.60);font-weight:bold;letter-spacing:1px;z-index:8;pointer-events:none;font-size:clamp(10px,2vw,15px);}
 .sp-hud.active{display:flex;align-items:center;gap:10px;}
 #sp-hud1{top:0;}
-#sp-hud2{top:51.4%;}
+#sp-hud2{top:48.6%;}
 .sp-tag{border-radius:5px;padding:1px 6px;font-size:clamp(9px,1.6vw,13px);font-weight:900;letter-spacing:2px;}
 #sp-hud1 .sp-tag{background:#2255cc;color:#fff;}
 #sp-hud2 .sp-tag{background:#cc4422;color:#fff;}
@@ -107,6 +107,7 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 
 /* Notification d'item (hit, ramassage) */
 #item-notif{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:none;font-size:clamp(22px,6vw,52px);font-weight:900;color:#F4D03F;text-shadow:3px 3px 0 #000;z-index:9;pointer-events:none;animation:notif-pop .7s ease-out;}
+#item-notif-p2{position:absolute;top:75%;left:50%;transform:translate(-50%,-50%);display:none;font-size:clamp(22px,6vw,52px);font-weight:900;color:#F4D03F;text-shadow:3px 3px 0 #000;z-index:9;pointer-events:none;animation:notif-pop .7s ease-out;}
 @keyframes notif-pop{0%{transform:translate(-50%,-50%) scale(2);opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:0}}
 #wrong-way{position:absolute;top:18%;left:50%;transform:translateX(-50%);display:none;background:rgba(220,30,30,.88);color:#fff;font-size:clamp(16px,4.5vw,36px);font-weight:900;letter-spacing:2px;padding:6px 24px;border-radius:12px;border:3px solid #fff;z-index:9;pointer-events:none;animation:wrongway-blink .5s steps(2,start) infinite;}
 #wrong-way.active{display:block;}
@@ -419,6 +420,7 @@ input[type=range].pk-slider::-moz-range-thumb{width:20px;height:20px;border-radi
   </div>
   <div id="bridge-hud">🌉 <span data-i18n="bridge">PONT</span></div>
   <div id="item-notif"></div>
+  <div id="item-notif-p2"></div>
   <div id="wrong-way" data-i18n="wrong_way">⚠ MAUVAIS SENS !</div>
   <div id="rear-warn" data-i18n="rear_warn">⚠ DERRIÈRE !</div>
 
@@ -1557,8 +1559,8 @@ function onLapCrossed(k){
     game._lapStart=game.raceTime;
     if(lapTime>3000)game._bestLapThisRace=Math.min(game._bestLapThisRace,lapTime);
   }
-  if(k.laps>=currentTrack.totalLaps){k.finished=true;k.finishTime=game.raceTime;if(k.isPlayer)finishRace();}
-  else if(k.isPlayer){if(!SFX.play('lap',.85))AUDIO.beep(880,.12,.18);showLapFlash();}
+  if(k.laps>=currentTrack.totalLaps){k.finished=true;k.finishTime=game.raceTime;if((k.isPlayer||k.isP2)&&game.state===STATE.RACING)finishRace();}
+  else if(k.isPlayer||k.isP2){if(!SFX.play('lap',.85))AUDIO.beep(880,.12,.18);if(k.isPlayer)showLapFlash();}
 }
 
 /* ----- ITEMS SYSTÈME ----- */
@@ -1586,7 +1588,7 @@ function checkPickups(){
         k.item=pickRandom(ITEM_LIST);
         AUDIO.beep(880,.08,.14,k.x,k.y);
         if(isHuman(k))SFX.play('laugh',.6);
-        if(k.isPlayer)showNotif(" "+ITEM_INFO[k.item].label,600,k.item);
+        if(k.isPlayer||k.isP2)showNotif(" "+ITEM_INFO[k.item].label,600,k.item,k.isP2);
       }
     }
   }
@@ -1608,12 +1610,13 @@ function useItem(k, backward){
     k.boostTime=200;
     AUDIO.beep(1400,.06,.18,k.x,k.y);setTimeout(()=>AUDIO.beep(1600,.06,.16,k.x,k.y),60);setTimeout(()=>AUDIO.beep(1900,.12,.18,k.x,k.y),130);
     if(isHuman(k))SFX.play('boost',.9);
-    if(k.isPlayer)showNotif("🌶️ CHILI!",700,'CHILI');
+    if(k.isPlayer||k.isP2)showNotif("🌶️ CHILI!",700,'CHILI',k.isP2);
     return;
   }
   if(type==='KURKURE'){
     k.starTime=120;
-    if(k.isPlayer){showNotif("🍿 KURKURE!",900,'KURKURE');document.getElementById('star-fx').classList.add('active');}
+    if(k.isPlayer){showNotif("🍿 KURKURE!",900,'KURKURE',false);document.getElementById('star-fx').classList.add('active');}
+    else if(k.isP2)showNotif("🍿 KURKURE!",900,'KURKURE',true);
     const angles=[-0.45,-0.22,0,0.22,0.45];
     const throwAngle=k.angle+(backward?Math.PI:0);
     const px=k.x+Math.cos(throwAngle)*20, py=k.y+Math.sin(throwAngle)*20;
@@ -1629,7 +1632,7 @@ function useItem(k, backward){
     game.droppedItems.push({x:bx,y:by,type:'DOSA',life:900,ownerId:k.char.id});
     AUDIO.beep(380,.14,.12,k.x,k.y);setTimeout(()=>AUDIO.beep(280,.10,.10,k.x,k.y),80);
     if(isHuman(k))SFX.play('drop_all',.85);
-    if(k.isPlayer)showNotif("🫓 DOSA!",600,'DOSA');
+    if(k.isPlayer||k.isP2)showNotif("🫓 DOSA!",600,'DOSA',k.isP2);
     return;
   }
   // Projectiles : avant par défaut, arrière si ↓+X
@@ -1641,7 +1644,7 @@ function useItem(k, backward){
   else{AUDIO.beep(500,.08,.13,k.x,k.y);}
   if(isHuman(k)&&Math.random()<0.65)SFX.playChar('throw',k.char.id,'throw_voice',.75,150);
   const label=type==='CHAPPAL'?"🩴 CHAPPAL!":type==='CUILLERE'?"🥄 CUILLÈRE!":"🧅 OIGNON!";
-  if(k.isPlayer)showNotif((backward?'↩ ':'')+label,600,type);
+  if(k.isPlayer||k.isP2)showNotif((backward?'↩ ':'')+label,600,type,k.isP2);
 }
 
 // Mise à jour des projectiles
@@ -1739,7 +1742,8 @@ function stunKart(k,type){
   k.stunTime=dur;
   AUDIO.beep(220,.22,.18,k.x,k.y);
   if(isHuman(k))setTimeout(function(){SFX.play('stun_all',1.0);},100);
-  if(k.isPlayer){showNotif("💥 TOUCHÉ!",700);hudEl.classList.add('stun');setTimeout(()=>hudEl.classList.remove('stun'),700);}
+  if(k.isPlayer){showNotif("💥 TOUCHÉ!",700,null,false);hudEl.classList.add('stun');setTimeout(()=>hudEl.classList.remove('stun'),700);}
+  else if(k.isP2)showNotif("💥 TOUCHÉ!",700,null,true);
 }
 
 // IA utilise son item après un court délai
@@ -1839,6 +1843,7 @@ const hSpeed=document.getElementById('h-speed'),hPos=document.getElementById('h-
 const itemCorner=document.getElementById('item-corner'),icLabel=document.getElementById('ic-label');
 const bridgeHudEl=document.getElementById('bridge-hud');
 const notifEl=document.getElementById('item-notif');
+const notifElP2=document.getElementById('item-notif-p2');
 let notifTimer=0;
 
 function formatTime(ms){const m=Math.floor(ms/60000),s=Math.floor((ms%60000)/1000),cs=Math.floor((ms%1000)/10);return m+":"+String(s).padStart(2,'0')+"."+String(cs).padStart(2,'0');}
@@ -1850,7 +1855,7 @@ function _spHudKart(k,nameEl,lapEl,itemEl,posEl){
   lapEl.textContent=' · '+T('lap_label')+' '+(k.finished?currentTrack.totalLaps:clamp(k.laps+1,1,currentTrack.totalLaps))+'/'+currentTrack.totalLaps;
   posEl.textContent=ordinal(computePlace(k));
   const itm=k.item||(k.starTime>0?'KURKURE':null)||(k.boostTime>0?'CHILI':null);
-  if(itm){itemEl.style.display='';itemEl.textContent=ITEM_INFO[itm].label;}
+  if(itm){itemEl.style.display='inline-block';itemEl.textContent=ITEM_INFO[itm].label;}
   else{itemEl.style.display='none';}
 }
 function drawHUD(){
@@ -1889,22 +1894,24 @@ let lapFlashT=0;
 function showLapFlash(){lapFlashT=300;hudEl.classList.add('flash');}
 function updateLapFlash(dtMs){if(lapFlashT>0){lapFlashT-=dtMs;if(lapFlashT<=0)hudEl.classList.remove('flash');}}
 
-function showNotif(text,duration,iconType){
-  notifEl.innerHTML="";
+function showNotif(text,duration,iconType,forP2){
+  const el=forP2?notifElP2:notifEl;
+  if(!forP2)el.style.top=game.splitScreen?'25%':'50%';
+  el.innerHTML="";
   if(iconType&&(ITEM_INFO[iconType]||DIFF_ICONS[iconType])){
     const cv=document.createElement('canvas');
     cv.width=48;cv.height=48;
     cv.style.cssText="width:.95em;height:.95em;image-rendering:pixelated;image-rendering:crisp-edges;vertical-align:middle;margin-right:.18em;";
     drawPixelIcon(cv,iconType);
-    notifEl.appendChild(cv);
+    el.appendChild(cv);
   }
-  notifEl.appendChild(document.createTextNode(text));
-  notifEl.style.display="block";
-  notifEl.style.animation="none";
-  void notifEl.offsetWidth;
-  notifEl.style.animation="notif-pop .7s ease-out";
-  clearTimeout(notifEl._t);
-  notifEl._t=setTimeout(()=>{notifEl.style.display="none";},duration);
+  el.appendChild(document.createTextNode(text));
+  el.style.display="block";
+  el.style.animation="none";
+  void el.offsetWidth;
+  el.style.animation="notif-pop .7s ease-out";
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>{el.style.display="none";},duration);
 }
 
 /* ----- SCREENS ----- */
@@ -2111,7 +2118,7 @@ function sbar(label,n){return '<div>'+label+'<span class="bar-bg"><span class="b
 /* ----- MUSIQUE MENU ----- */
 const _mm=()=>document.getElementById('menu-music');
 let _menuMusicTimer=null;
-function menuMusicPlay(){const m=_mm();if(!m||m._playing)return;m.volume=0.55;m.currentTime=m.currentTime||0;m.play().catch(()=>{});m._playing=true;}
+function menuMusicPlay(){const m=_mm();if(!m)return;if(m._playing&&!m.paused)return;m._playing=false;m.volume=0.55;m.currentTime=m.currentTime||0;m.play().catch(()=>{});m._playing=true;}
 function menuMusicStop(){if(_menuMusicTimer){clearTimeout(_menuMusicTimer);_menuMusicTimer=null;}const m=_mm();if(!m)return;m.pause();m._playing=false;}
 
 document.addEventListener('visibilitychange',()=>{
@@ -2320,7 +2327,7 @@ function startRace(){
     others.forEach((ch,i)=>game.karts.push(makeKart(ch,false,i+1)));
   }
   game.raceTime=0;game.countdown=3600;game.state=STATE.COUNTDOWN;
-  game._lapStart=0;game._bestLapThisRace=1e18;
+  game._lapStart=0;game._bestLapThisRace=1e18;game._finishing=false;
   // Appliquer le multiplicateur CC à tous les karts
   game.karts.forEach(k=>{
     k.char={...k.char,stats:{...k.char.stats,
@@ -2330,6 +2337,7 @@ function startRace(){
   });
   initItemBoxes();
   showScreen(null);
+  hudEl.classList.remove('active');
   if(game.splitScreen){
     document.getElementById('sp-hud1').classList.add('active');
     document.getElementById('sp-hud2').classList.add('active');
@@ -2344,7 +2352,7 @@ function startRace(){
   game._cdShown=-1;
 }
 
-function finishRace(){AUDIO.silenceEngine();AUDIO.beep(1320,.25,.2);setTimeout(showResult,600);}
+function finishRace(){if(game._finishing)return;game._finishing=true;AUDIO.silenceEngine();AUDIO.beep(1320,.25,.2);setTimeout(showResult,600);}
 
 const cdEl=document.getElementById('countdown'),cdNum=document.getElementById('cd-num');
 function updateCountdown(dtMs){
