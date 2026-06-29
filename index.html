@@ -1126,7 +1126,7 @@ const INPUT={
       // Frein : B physique NES=btn(0), LT Xbox
       const dBrake=ltVal>0.15||btn(0);
       // Item : X/Y/LB/RB uniquement (A/B réservés gaz/frein)
-      const dUse=btn(2)||btn(3)||btn(4)||btn(5);
+      const dUse=btn(2); // X uniquement — btn(3/4/5) conflictent avec D-pad sur certaines NES chinoises
       // Start(9) / Options(9) pour pause — détection front montant
       const dStart=btn(9)||btn(8);
       if(dStart&&!this._gpPrev.start){
@@ -1632,7 +1632,7 @@ function useItem(k, backward){
   if(type==='CHAPPAL'){AUDIO.beep(520,.08,.15,k.x,k.y);setTimeout(()=>AUDIO.beep(320,.06,.12,k.x,k.y),60);}
   else if(type==='CUILLERE'){AUDIO.beep(740,.1,.14,k.x,k.y);}
   else{AUDIO.beep(500,.08,.13,k.x,k.y);}
-  if(isHuman(k)){SFX.play('throw',.8);if(Math.random()<0.65)SFX.playChar('throw',k.char.id,'throw_voice',.75,150);}
+  if(isHuman(k)&&Math.random()<0.65)SFX.playChar('throw',k.char.id,'throw_voice',.75,150);
   const label=type==='CHAPPAL'?"🩴 CHAPPAL!":type==='CUILLERE'?"🥄 CUILLÈRE!":"🧅 OIGNON!";
   if(k.isPlayer)showNotif((backward?'↩ ':'')+label,600,type);
 }
