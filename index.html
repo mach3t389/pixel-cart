@@ -1194,10 +1194,8 @@ function updateGamepadUI(){
 
 window.addEventListener('gamepadconnected',()=>{
   updateGamepadUI();
-  // Empêche le bouton de connexion de déclencher immédiatement une action
   game._padNav=performance.now();
-  // Démarre la musique si pas encore démarrée (pas de pointerdown avec manette)
-  menuMusicPlay();
+  if(game.state===STATE.TITLE||game.state===STATE.SELECT||game.state===STATE.DIFF_SELECT||game.state===STATE.TRACK_SELECT||game.state===STATE.RESULT||game.state===STATE.STATS||game.state===STATE.SETTINGS)menuMusicPlay();
   AUDIO.init();AUDIO.resume();
 });
 window.addEventListener('gamepaddisconnected',()=>updateGamepadUI());
