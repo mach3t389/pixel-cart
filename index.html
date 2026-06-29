@@ -1095,76 +1095,82 @@ const INPUT={
   gamepad:null,
   _gpPrev:{start:false,use:false}, // pour détecter front montant bouton Start/item
   _gpConnected:false,
+  gamepad:null, gamepad2:null,
+  _gpPrev:{start:false,use:false}, _gp2Prev:{start:false,use:false},
+
+  // Construit l'état normalisé d'une manette (même mapping NES/Xbox pour les deux)
+  _buildGP(g){
+    const btn=i=>(g.buttons[i]&&(g.buttons[i].pressed||g.buttons[i].value>0.15));
+    const dLeft =g.axes[0]<-0.25||btn(14);
+    const dRight=g.axes[0]> 0.25||btn(15);
+    const rtVal=Math.max(g.axes[7]>0?g.axes[7]:0,g.axes[5]!=null?(g.axes[5]+1)/2:0,g.buttons[7]?g.buttons[7].value:0);
+    const ltVal=Math.max(g.axes[6]>0?g.axes[6]:0,g.axes[2]!=null?(g.axes[2]+1)/2:0,g.buttons[6]?g.buttons[6].value:0);
+    const dPadDown=(g.axes[1]!=null&&g.axes[1]>0.45)||btn(13);
+    const dAccel=rtVal>0.15||btn(1);
+    const dBrake=ltVal>0.15||btn(0);
+    const dUse=btn(3);
+    const rawAxis=Math.abs(g.axes[0])>0.12?g.axes[0]:(dLeft?-1:dRight?1:0);
+    const accelAxis=Math.min(Math.max(rtVal,btn(1)?1:0),1);
+    const brakeAxis=Math.min(Math.max(ltVal,btn(0)?1:0),1);
+    return {left:dLeft,right:dRight,accel:dAccel,brake:dBrake,use:dUse,dPadDown:dPadDown,
+            steerAxis:rawAxis,accelAxis:Math.min(accelAxis,1),brakeAxis:Math.min(brakeAxis,1),
+            start:btn(9)||btn(8)};
+  },
 
   update(){
     const pads=navigator.getGamepads?navigator.getGamepads():null;
-    let gp=null;
-    if(pads){for(let i=0;i<pads.length;i++){if(pads[i]&&pads[i].connected){gp=pads[i];break;}}}
+    let gp=null,gp2=null;
+    if(pads){for(let i=0;i<pads.length;i++){if(pads[i]&&pads[i].connected){if(!gp)gp=pads[i];else if(!gp2){gp2=pads[i];break;}}}}
     const wasConnected=this._gpConnected;
     this._gpConnected=!!gp;
     if(this._gpConnected!==wasConnected)updateGamepadUI();
 
+    // Manette 1 (P1)
     if(gp){
-      const btn=i=>(gp.buttons[i]&&(gp.buttons[i].pressed||gp.buttons[i].value>0.15));
-      // Directions : stick gauche OU D-pad (axes ou boutons)
-      const dLeft =gp.axes[0]<-0.25||btn(14);
-      const dRight=gp.axes[0]> 0.25||btn(15);
-      // RT : axes[7] (Xbox360), axes[5] remappé (XboxOne/générique -1..1→0..1), btn(7)
-      const rtVal=Math.max(gp.axes[7]>0?gp.axes[7]:0, gp.axes[5]!=null?(gp.axes[5]+1)/2:0, gp.buttons[7]?gp.buttons[7].value:0);
-      // LT : axes[6] (Xbox360), axes[2] remappé (XboxOne/générique -1..1→0..1), btn(6)
-      const ltVal=Math.max(gp.axes[6]>0?gp.axes[6]:0, gp.axes[2]!=null?(gp.axes[2]+1)/2:0, gp.buttons[6]?gp.buttons[6].value:0);
-      // D-pad haut/bas — fonctionne pour NES (axes[1]) et Xbox (btn12/13)
-      const dPadUp  =(gp.axes[1]!=null&&gp.axes[1]<-0.45)||btn(12);
-      const dPadDown=(gp.axes[1]!=null&&gp.axes[1]> 0.45)||btn(13);
-      // Gaz : A physique NES=btn(1), RT Xbox
-      const dAccel=rtVal>0.15||btn(1);
-      // Frein : B physique NES=btn(0), LT Xbox
-      const dBrake=ltVal>0.15||btn(0);
-      // Item : X/Y/LB/RB uniquement (A/B réservés gaz/frein)
-      const dUse=btn(3); // X physique sur cette manette NES = btn(3)
-      // Start(9) / Options(9) pour pause — détection front montant
-      const dStart=btn(9)||btn(8);
-      if(dStart&&!this._gpPrev.start){
-        if(game.state===STATE.RACING||game.state===STATE.PAUSE)togglePause();
-      }
-      if(dUse&&!this._gpPrev.use&&game.state===STATE.RACING)useItem(game.player,dPadDown);
-      this._gpPrev.start=dStart;
-      this._gpPrev.use=dUse;
-      // Axis brut pour steering analogique — axes[0] si dispo, sinon D-pad binaire (btn14/15)
-      const rawAxis=Math.abs(gp.axes[0])>0.12 ? gp.axes[0] : (dLeft?-1:dRight?1:0);
-      // Gaz analogique via RT (axes[7] ou buttons[7].value)
-      const accelAxis=Math.min(Math.max(rtVal, btn(1)?1:0), 1);
-      const brakeAxis=Math.min(Math.max(ltVal, btn(0)?1:0), 1);
-      this.gamepad={left:dLeft,right:dRight,accel:dAccel,brake:dBrake,use:dUse,
-                    steerAxis:rawAxis, accelAxis:Math.min(accelAxis,1), brakeAxis:Math.min(brakeAxis,1)};
-    } else {
-      this.gamepad=null;
-      this._gpPrev.start=false;this._gpPrev.use=false;
-    }
+      const s=this._buildGP(gp);
+      if(s.start&&!this._gpPrev.start&&(game.state===STATE.RACING||game.state===STATE.PAUSE))togglePause();
+      if(s.use&&!this._gpPrev.use&&game.state===STATE.RACING)useItem(game.player,s.dPadDown);
+      this._gpPrev.start=s.start; this._gpPrev.use=s.use;
+      this.gamepad=s;
+    } else { this.gamepad=null; this._gpPrev.start=false; this._gpPrev.use=false; }
+
+    // Manette 2 (P2 split-screen)
+    if(gp2){
+      const s=this._buildGP(gp2);
+      if(s.start&&!this._gp2Prev.start&&(game.state===STATE.RACING||game.state===STATE.PAUSE))togglePause();
+      if(s.use&&!this._gp2Prev.use&&game.state===STATE.RACING&&game.splitScreen&&game.p2)useItem(game.p2,s.dPadDown);
+      this._gp2Prev.start=s.start; this._gp2Prev.use=s.use;
+      this.gamepad2=s;
+    } else { this.gamepad2=null; this._gp2Prev.start=false; this._gp2Prev.use=false; }
   },
 
-  get left(){  return game.splitScreen ? !!(this.keyboard['ArrowLeft']||this.touch.left)   : !!(this.keyboard['ArrowLeft']||this.keyboard['KeyA']||this.touch.left||(this.gamepad&&this.gamepad.left));},
-  get right(){ return game.splitScreen ? !!(this.keyboard['ArrowRight']||this.touch.right)  : !!(this.keyboard['ArrowRight']||this.keyboard['KeyD']||this.touch.right||(this.gamepad&&this.gamepad.right));},
-  get accel(){ return game.splitScreen ? !!(this.keyboard['ArrowUp']||this.touch.accel)     : !!(this.keyboard['ArrowUp']||this.keyboard['KeyW']||this.touch.accel||(this.gamepad&&this.gamepad.accel));},
-  get brake(){ return game.splitScreen ? !!(this.keyboard['ArrowDown']||this.touch.brake)   : !!(this.keyboard['ArrowDown']||this.keyboard['KeyS']||this.touch.brake||(this.gamepad&&this.gamepad.brake));},
+  // P1 : flèches + manette 1 + tactile (WASD seulement si pas split-screen)
+  get left(){  var g=this.gamepad; return !!(this.keyboard['ArrowLeft']||(game.splitScreen?false:this.keyboard['KeyA'])||this.touch.left||(g&&g.left));},
+  get right(){ var g=this.gamepad; return !!(this.keyboard['ArrowRight']||(game.splitScreen?false:this.keyboard['KeyD'])||this.touch.right||(g&&g.right));},
+  get accel(){ var g=this.gamepad; return !!(this.keyboard['ArrowUp']||(game.splitScreen?false:this.keyboard['KeyW'])||this.touch.accel||(g&&g.accel));},
+  get brake(){ var g=this.gamepad; return !!(this.keyboard['ArrowDown']||(game.splitScreen?false:this.keyboard['KeyS'])||this.touch.brake||(g&&g.brake));},
   get use(){   return !!(this.keyboard['ShiftLeft']||this.keyboard['ShiftRight']||this.touch.use);},
-  // Valeur analogique du stick (-1..1), retombe sur binaire si clavier/tactile
   get steerAxis(){
-    if(this.gamepad&&Math.abs(this.gamepad.steerAxis)>0.05)return this.gamepad.steerAxis;
-    if(this.touch.steer)return this.touch.steer; // joystick analogique (-1..1)
-    if(this.keyboard['ArrowLeft']||this.keyboard['KeyA']||this.touch.left)return -1;
-    if(this.keyboard['ArrowRight']||this.keyboard['KeyD']||this.touch.right)return 1;
+    var g=this.gamepad;
+    if(g&&Math.abs(g.steerAxis)>0.05)return g.steerAxis;
+    if(this.touch.steer)return this.touch.steer;
+    if(this.keyboard['ArrowLeft']||(game.splitScreen?false:this.keyboard['KeyA'])||this.touch.left)return -1;
+    if(this.keyboard['ArrowRight']||(game.splitScreen?false:this.keyboard['KeyD'])||this.touch.right)return 1;
     return 0;
   },
   get accelAxis(){
-    if(this.gamepad&&this.gamepad.accelAxis>0.05)return this.gamepad.accelAxis;
-    return (this.keyboard['ArrowUp']||this.keyboard['KeyW']||this.touch.accel)?1:0;
+    var g=this.gamepad;
+    if(g&&g.accelAxis>0.05)return g.accelAxis;
+    return (this.keyboard['ArrowUp']||(game.splitScreen?false:this.keyboard['KeyW'])||this.touch.accel)?1:0;
   },
-  get p2left(){  return !!(this.keyboard['KeyA']||(this.gamepad&&this.gamepad.left));},
-  get p2right(){ return !!(this.keyboard['KeyD']||(this.gamepad&&this.gamepad.right));},
-  get p2accel(){ return !!(this.keyboard['KeyW']||(this.gamepad&&this.gamepad.accel));},
-  get p2brake(){ return !!(this.keyboard['KeyS']||(this.gamepad&&this.gamepad.brake));},
+  // P2 : WASD + manette 2
+  get p2left(){  var g=this.gamepad2; return !!(this.keyboard['KeyA']||(g&&g.left));},
+  get p2right(){ var g=this.gamepad2; return !!(this.keyboard['KeyD']||(g&&g.right));},
+  get p2accel(){ var g=this.gamepad2; return !!(this.keyboard['KeyW']||(g&&g.accel));},
+  get p2brake(){ var g=this.gamepad2; return !!(this.keyboard['KeyS']||(g&&g.brake));},
   get p2use(){   return !!(this.keyboard['ControlLeft']||this.keyboard['ControlRight']);},
+  get p2steerAxis(){ var g=this.gamepad2; return g&&Math.abs(g.steerAxis)>0.05?g.steerAxis:(this.keyboard['KeyA']?-1:this.keyboard['KeyD']?1:0);},
+  get p2accelAxis(){ var g=this.gamepad2; return g&&g.accelAxis>0.05?g.accelAxis:(this.keyboard['KeyW']?1:0);},
 };
 
 function updateGamepadUI(){
@@ -1489,9 +1495,9 @@ function updatePlayer(k,dt){
   // Steering : analogique pour joueur 1 (stick), binaire pour P2/IA
   let steerInput;
   if(!k.isP2){
-    steerInput=INPUT.steerAxis; // -1..1, proportionnel au stick
+    steerInput=INPUT.steerAxis;
   } else {
-    steerInput=(INPUT.p2left?-1:0)+(INPUT.p2right?1:0);
+    steerInput=INPUT.p2steerAxis;
   }
   // Réduction de maniabilité à haute vitesse (stabilité en ligne droite)
   const speedRatio=k.speed/st.topSpeed;
@@ -1499,7 +1505,7 @@ function updatePlayer(k,dt){
   k.angle+=steerInput*steerStr*dt;
 
   const iA=k.isP2?INPUT.p2accel:INPUT.accel, iB=k.isP2?INPUT.p2brake:INPUT.brake;
-  const accelMag=k.isP2?(iA?1:0):INPUT.accelAxis; // gaz proportionnel via RT
+  const accelMag=k.isP2?INPUT.p2accelAxis:INPUT.accelAxis; // gaz proportionnel via RT
   const reverseCap=-st.topSpeed*0.40; // marche arrière ≈ 40% de la vitesse max
   if(accelMag>0.05){const cap=st.topSpeed*Math.min(speedMult,boostMult*1.2);k.speed=Math.min(k.speed+st.accel*speedMult*accelMag*dt,cap);}
   else if(iB)k.speed=Math.max(reverseCap,k.speed-.15*dt); // frein → s'arrête puis recule
