@@ -25,6 +25,17 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 #rotate-prompt p { color:#FFC83D; font-size:18px; font-weight:bold; letter-spacing:2px; text-align:center; padding:0 24px; }
 @keyframes rotateHint { 0%,100%{transform:rotate(0deg);} 50%{transform:rotate(90deg);} }
 @media (orientation:landscape) { #rotate-prompt { display:none!important; } }
+/* Mobile en portrait : on NE montre PAS l'invite de rotation ; on affiche le jeu
+   pivoté en paysage (rempli plein écran). N'affecte pas l'APK (verrouillé paysage). */
+@media (orientation:portrait) {
+  #rotate-prompt { display:none!important; }
+  #stage {
+    top:50%; left:50%; right:auto; bottom:auto;
+    width:100vh; height:100vw;
+    transform:translate(-50%,-50%) rotate(90deg);
+    transform-origin:center center;
+  }
+}
 #game-canvas { position:absolute; top:0;right:0;bottom:0;left:0; width:100%; height:100%; display:block; image-rendering:pixelated; image-rendering:crisp-edges; }
 
 .screen { position:absolute; top:0;right:0;bottom:0;left:0; display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; z-index:10; }
