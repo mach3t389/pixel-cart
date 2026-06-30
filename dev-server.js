@@ -23,6 +23,27 @@ const MIME = {
 };
 
 const server = http.createServer((req, res) => {
+  // Endpoint de dev : écrit un PNG envoyé par le navigateur dans icons/<name>.png
+  // (sert à générer les icônes emoji pré-rasterisées sans corruption).
+  if (req.method === 'POST' && req.url.split('?')[0] === '/save-icon') {
+    var qs = require('url').parse(req.url, true).query;
+    var name = String(qs.name || '').replace(/[^a-z0-9_-]/gi, '');
+    if (!name) { res.writeHead(400); res.end('bad name'); return; }
+    var chunks = [];
+    req.on('data', function (c) { chunks.push(c); });
+    req.on('end', function () {
+      try {
+        fs.mkdirSync(path.join(ROOT, 'icons'), { recursive: true });
+        fs.writeFileSync(path.join(ROOT, 'icons', name + '.png'), Buffer.concat(chunks));
+        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        res.end('saved ' + name + ' (' + Buffer.concat(chunks).length + ' bytes)');
+      } catch (e) {
+        res.writeHead(500); res.end(String(e));
+      }
+    });
+    return;
+  }
+
   // Retire la query string et décode (les SFX ont des espaces/parenthèses)
   let urlPath = decodeURIComponent(req.url.split('?')[0]);
   if (urlPath === '/') urlPath = '/index.html';

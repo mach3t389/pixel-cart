@@ -775,46 +775,31 @@ const ITEM_RESPAWN=600;
 // Icônes : emoji rendu petit puis agrandi nearest-neighbor = "pixelisé"
 const DIFF_ICONS={LEAF:'🫑',BOLT:'🌶️',SKULL:'🔥'};
 const _emojiCache={};
-// Emoji trop récents pour Chrome 79 / vieux Android (rendraient une case vide) →
-// dessinés à la main en pixel art : 🫓 DOSA, 🧅 oignon, 🩴 chappal, 🫑 poivron (difficulté facile).
-const _ART_EMOJI={'🫓':'dosa','🧅':'onion','🩴':'sandal','🫑':'pepper'};
-function _drawPixelArt(c,kind,S){
-  function R(x,y,w,h,col){c.fillStyle=col;c.fillRect(Math.round(x*S),Math.round(y*S),Math.max(1,Math.round(w*S)),Math.max(1,Math.round(h*S)));}
-  if(kind==='dosa'){           // galette dorée ovale + taches grillées
-    var L='#e8b73a',D='#9c7415',B='#6e500c';
-    R(0.22,0.36,0.56,0.10,L); R(0.12,0.42,0.76,0.22,L); R(0.06,0.50,0.88,0.12,L);
-    R(0.12,0.60,0.76,0.10,D);
-    R(0.32,0.46,0.10,0.10,B); R(0.60,0.43,0.08,0.08,B); R(0.46,0.53,0.07,0.07,B);
-  } else if(kind==='onion'){   // bulbe violet + stries + pousse verte
-    var oD='#9c5bb0',oL='#caa0e0',g='#3f9a34';
-    R(0.28,0.34,0.44,0.50,oD); R(0.33,0.38,0.34,0.44,oL);
-    R(0.46,0.36,0.05,0.48,oD); R(0.38,0.42,0.04,0.36,oD); R(0.58,0.42,0.04,0.36,oD);
-    R(0.45,0.13,0.07,0.20,g); R(0.38,0.18,0.07,0.10,g); R(0.55,0.18,0.07,0.10,g);
-  } else if(kind==='sandal'){  // semelle brune ovale + lanière en V
-    var sL='#d6920f',sD='#5d3a00';
-    R(0.30,0.14,0.22,0.10,sL); R(0.24,0.20,0.36,0.62,sL); R(0.18,0.32,0.48,0.40,sL);
-    R(0.41,0.26,0.05,0.34,sD); R(0.30,0.30,0.16,0.05,sD); R(0.46,0.30,0.16,0.05,sD);
-  } else if(kind==='pepper'){  // poivron vert + tige
-    var pG='#4ca832',pD='#2f7320',st='#3a7a25';
-    R(0.30,0.32,0.40,0.48,pG); R(0.34,0.36,0.34,0.40,pG); R(0.30,0.40,0.10,0.34,pD);
-    R(0.46,0.14,0.06,0.16,st); R(0.40,0.20,0.20,0.08,st);
-  }
-}
+// Emoji trop récents pour Chrome 79 / vieux Android (🫓🧅🩴🫑 = Emoji 12-13).
+// Sur un navigateur récent le glyphe s'affiche normalement (fillText, look natif d'origine).
+// Sur Chrome 79 il manque → on bascule sur une image PNG pré-rasterisée de secours
+// (icons/<nom>.png), pixélisée pareil. Look identique à l'emoji, et marche partout.
+const _BAKED_NAMES={'🫓':'dosa','🧅':'onion','🩴':'sandal','🫑':'pepper'};
+const _BAKED_IMG={};
+for(var _be in _BAKED_NAMES){var _bi=new Image();_bi.src='icons/'+_BAKED_NAMES[_be]+'.png';_BAKED_IMG[_be]=_bi;}
+function _canvasHasInk(c2d,sz){var d=c2d.getImageData(0,0,sz,sz).data;for(var i=3;i<d.length;i+=4){if(d[i]>10)return true;}return false;}
 function _buildPixelEmoji(emoji,srcPx,dstPx){
   const key=emoji+'_'+srcPx+'_'+dstPx;
   if(_emojiCache[key])return _emojiCache[key];
-  const out=document.createElement('canvas');out.width=dstPx;out.height=dstPx;
-  const oc=out.getContext('2d');oc.imageSmoothingEnabled=false;
-  // Emoji trop récent → pixel art dessiné (sinon Chrome 79 dessine du vide)
-  if(_ART_EMOJI[emoji]){
-    _drawPixelArt(oc,_ART_EMOJI[emoji],dstPx);
-    return(_emojiCache[key]=out);
-  }
-  // 1. Dessiner l'emoji à petite taille (srcPx) puis 2. agrandir sans antialiasing
   const tmp=document.createElement('canvas');tmp.width=srcPx;tmp.height=srcPx;
   const tc=tmp.getContext('2d');
+  // 1. Emoji via la police (rendu natif là où le glyphe existe)
   tc.font=Math.round(srcPx*.9)+'px serif';tc.textBaseline='middle';tc.textAlign='center';
   tc.fillText(emoji,srcPx/2,srcPx/2+srcPx*.04);
+  // 2. Glyphe absent (case vide, ex. Chrome 79) → image PNG de secours
+  const baked=_BAKED_IMG[emoji];
+  if(baked&&!_canvasHasInk(tc,srcPx)){
+    if(!(baked.complete&&baked.naturalWidth>0)){var o2=document.createElement('canvas');o2.width=dstPx;o2.height=dstPx;return o2;}
+    tc.clearRect(0,0,srcPx,srcPx);tc.drawImage(baked,0,0,srcPx,srcPx);
+  }
+  // 3. Agrandir sans antialiasing → pixels carrés (même pixélisation qu'avant)
+  const out=document.createElement('canvas');out.width=dstPx;out.height=dstPx;
+  const oc=out.getContext('2d');oc.imageSmoothingEnabled=false;
   oc.drawImage(tmp,0,0,dstPx,dstPx);
   return(_emojiCache[key]=out);
 }

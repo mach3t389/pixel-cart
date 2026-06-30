@@ -1,5 +1,5 @@
 # PUNJABI SPEED — Project Blueprint
-> Document de référence pour Claude Code · v3.1 · Mis à jour 2026-06-30
+> Document de référence pour Claude Code · v3.2 · Mis à jour 2026-06-30
 
 ---
 
@@ -34,6 +34,7 @@
     ├── index.html                          (140+ Ko — jeu complet)
     ├── manifest.json                       (PWA — installation sur écran d'accueil)
     ├── service-worker.js                   (PWA — cache hors-ligne)
+    ├── icons/                              (4 PNG — repli emoji pour Chrome 79, voir §8)
     ├── menu-music.mp3                      (2.1 Mo — Notize - Density Wave)
     └── sfx/Sound effects 1/                (18 fichiers AAC .m4a, ~500 Ko)
         ├── Throw object.m4a
@@ -306,21 +307,25 @@ Pipeline :
 
 > **Règle absolue** : tout nouvel item ou icône de menu doit passer par `_buildPixelEmoji` avec `srcPx = Math.max(6, Math.round(sz/3))`. Ne jamais utiliser `fillText` emoji directement sur le canvas de jeu — ça briserait la cohérence pixel art.
 
-#### Pixel art dessiné pour les emoji trop récents (Chrome 79)
+#### Emoji trop récents pour Chrome 79 : repli sur image PNG (v3.2)
 Chrome 79 / l'ancien Android de la radio ne possèdent pas les glyphes des emoji **≥ Emoji 12.0 (2019-2020)** : `fillText` y dessine du **vide** → l'item apparaît comme une case transparente (bug DOSA invisible).
 
-`_buildPixelEmoji` intercepte donc 4 emoji via la table `_ART_EMOJI` et les **dessine à la main en `fillRect`** (fonction `_drawPixelArt`, coords normalisées × `dstPx`, donc valable de 16px à 76px), au lieu du `fillText` vide :
+`_buildPixelEmoji` fonctionne en **deux temps** :
+1. Dessine l'emoji via `fillText` (rendu **natif** là où le glyphe existe — navigateur récent, poste de dev → look d'origine inchangé).
+2. Si le canvas est **vide** (`_canvasHasInk` = false, cas Chrome 79) **et** que l'emoji a une image de secours, il bascule sur le PNG `icons/<nom>.png` pré-rasterisé (rendu d'un vrai emoji), puis pixélise pareil.
 
-| Emoji | Item / usage | Version | Rendu |
+| Emoji | Item / usage | Version | Repli |
 |---|---|---|---|
-| 🫓 | DOSA | Emoji 13.0 | pixel art « galette dorée » |
-| 🧅 | OIGNON | Emoji 12.0 | pixel art « bulbe violet + pousse » |
-| 🩴 | CHAPPAL | Emoji 12.0 | pixel art « sandale » |
-| 🫑 | difficulté FACILE (`DIFF_ICONS.LEAF`) | Emoji 13.0 | pixel art « poivron vert » |
+| 🫓 | DOSA | Emoji 13.0 | `icons/dosa.png` |
+| 🧅 | OIGNON | Emoji 12.0 | `icons/onion.png` |
+| 🩴 | CHAPPAL | Emoji 12.0 | `icons/sandal.png` |
+| 🫑 | difficulté FACILE (`DIFF_ICONS.LEAF`) | Emoji 13.0 | `icons/pepper.png` |
 
-Comme **tous** les chemins de rendu passent par `_buildPixelEmoji` (sol, projectile en vol, inventaire HUD, notif, tips, boutons menu), ce **point d'interception unique** couvre tout. Audit : ce sont les **seuls** emoji ≥ Emoji 12.0 dessinés sur canvas ; les autres (🌶️ 🍿 🥄 🔥 👤 👥 📊 ⚙ ▶ 🌉) sont assez anciens.
+Table `_BAKED_NAMES` (emoji → nom de fichier), images préchargées dans `_BAKED_IMG`. Comme **tous** les chemins de rendu passent par `_buildPixelEmoji`, le repli couvre tout (sol, vol, inventaire, notif, tips, menu). Audit : ce sont les **seuls** emoji ≥ Emoji 12.0 dessinés sur canvas (les autres — 🌶️ 🍿 🥄 🔥 👤 👥 📊 ⚙ ▶ 🌉 — sont assez anciens).
 
-> **Règle** : tout nouvel item avec un emoji récent (≥ 2019) doit ajouter une entrée `_ART_EMOJI` + un cas dans `_drawPixelArt`, sinon il sera invisible sur la radio.
+> Les PNG `icons/*.png` sont des emoji rasterisés via un navigateur (générés avec le serveur de dev, voir §16ter). On NE lit jamais `getImageData` sur un canvas issu d'un PNG (évite le canvas-taint en `file://`).
+
+> **Règle** : tout nouvel item avec un emoji récent (≥ 2019) doit ajouter une entrée `_BAKED_NAMES` + un fichier `icons/<nom>.png`, sinon il sera invisible sur la radio. **Le dossier `icons/` doit être copié sur la clé USB et dans `build-apk/www/`.**
 
 ### Notifications d'item (`showNotif`)
 - **Ramassage** : une pop centrale (`#item-notif`, 25 % en split / 50 % en solo ; `#item-notif-p2` à 75 %) indique l'item obtenu.
@@ -653,6 +658,7 @@ pour sa socket loopback — il échoue dans un shell non-interactif) :
 cd "D:\Vibe Coding\punjabi-speed"
 Copy-Item index.html,manifest.json,service-worker.js,menu-music.mp3 build-apk\www\ -Force
 Remove-Item build-apk\www\sfx -Recurse -Force; Copy-Item sfx build-apk\www\ -Recurse
+Remove-Item build-apk\www\icons -Recurse -Force -ErrorAction SilentlyContinue; Copy-Item icons build-apk\www\ -Recurse
 
 # 2. Construire l'APK
 cd build-apk
@@ -712,6 +718,15 @@ Port configurable via `PORT`.
 ---
 
 ## 18. Historique des changements
+
+### v3.2 — 2026-06-30
+- **Icônes emoji récents** : remplacement du pixel art dessiné à la main (look trop différent)
+  par un repli sur **image PNG** d'un vrai emoji rasterisé (`icons/dosa|onion|sandal|pepper.png`).
+  `_buildPixelEmoji` essaie d'abord l'emoji natif (`fillText`, look d'origine sur navigateur
+  récent) et ne bascule sur le PNG que si le glyphe manque (`_canvasHasInk` = false, Chrome 79).
+  → Nouveau dossier `icons/` à inclure sur la clé USB et dans `build-apk/www/`.
+- **Serveur de dev** : endpoint `POST /save-icon` (écrit `icons/<name>.png`) pour générer les
+  PNG d'emoji depuis un navigateur sans corruption de copier-coller.
 
 ### v3.1 — 2026-06-30
 - **Pixel art pour emoji trop récents (Chrome 79)** : 🫓🧅🩴🫑 (Emoji 12-13, invisibles sur la
