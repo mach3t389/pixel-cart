@@ -1,5 +1,5 @@
 # PUNJABI SPEED — Project Blueprint
-> Document de référence pour Claude Code · v3.2 · Mis à jour 2026-06-30
+> Document de référence pour Claude Code · v3.3 · Mis à jour 2026-06-30
 
 ---
 
@@ -307,12 +307,14 @@ Pipeline :
 
 > **Règle absolue** : tout nouvel item ou icône de menu doit passer par `_buildPixelEmoji` avec `srcPx = Math.max(6, Math.round(sz/3))`. Ne jamais utiliser `fillText` emoji directement sur le canvas de jeu — ça briserait la cohérence pixel art.
 
-#### Emoji trop récents pour Chrome 79 : repli sur image PNG (v3.2)
-Chrome 79 / l'ancien Android de la radio ne possèdent pas les glyphes des emoji **≥ Emoji 12.0 (2019-2020)** : `fillText` y dessine du **vide** → l'item apparaît comme une case transparente (bug DOSA invisible).
+#### Emoji trop récents pour Chrome 79 : repli sur image PNG (v3.2, détection corrigée v3.3)
+Chrome 79 / l'ancien Android de la radio ne possèdent pas les glyphes des emoji **≥ Emoji 12.0 (2019-2020)** : `fillText` y dessine soit du vide, soit une **boîte « tofu » `.notdef`** (un carré gris opaque) → l'item apparaît comme une case (bug DOSA invisible).
 
 `_buildPixelEmoji` fonctionne en **deux temps** :
 1. Dessine l'emoji via `fillText` (rendu **natif** là où le glyphe existe — navigateur récent, poste de dev → look d'origine inchangé).
-2. Si le canvas est **vide** (`_canvasHasInk` = false, cas Chrome 79) **et** que l'emoji a une image de secours, il bascule sur le PNG `icons/<nom>.png` pré-rasterisé (rendu d'un vrai emoji), puis pixélise pareil.
+2. Si le glyphe n'est **pas un vrai emoji couleur** (`_canvasHasColor` = false) **et** que l'emoji a une image de secours, il bascule sur le PNG `icons/<nom>.png` pré-rasterisé (rendu d'un vrai emoji), puis pixélise pareil.
+
+> **Détection par couleur (v3.3), pas par alpha.** L'ancien `_canvasHasInk` testait seulement l'alpha → la boîte tofu **opaque** de Chrome 79 le trompait (alpha>0 = « glyphe présent ») et le PNG ne s'affichait jamais. `_canvasHasColor` cherche un pixel **saturé** (`max(R,G,B) − min(R,G,B) > 40`) : un vrai emoji est coloré, une boîte tofu est grise → repli correct. Les 4 emoji ciblés (doré/violet/brun/vert) sont tous assez colorés.
 
 | Emoji | Item / usage | Version | Repli |
 |---|---|---|---|
@@ -540,7 +542,8 @@ Barre semi-transparente en haut :
 En split-screen le `#hud` mono-joueur est **masqué** (`body.sp-active #hud{display:none!important}`)
 et remplacé par **deux barres DOM** : `#sp-hud1` (haut, étiquette bleue **J1**) et `#sp-hud2`
 (bas, étiquette rouge **J2**, positionnée à `top:48.6%`). Chaque barre montre : tag, nom du perso,
-tour, item, chrono partagé (`sp-time`) et position. Mis à jour par `_spHudKart()` dans `drawHUD()`.
+tour, **icône de l'objet tenu** (canvas `sp1-ic`/`sp2-ic` via `drawPixelIcon`, depuis v3.3 — avant
+c'était juste un texte), chrono partagé (`sp-time`) et position. Mis à jour par `_spHudKart()` dans `drawHUD()`.
 
 > **Piège résolu (v3.0)** : il existait un 2e HUD dessiné sur le canvas (`drawSplitHUD`) qui se
 > superposait aux barres DOM → double barre. `drawSplitHUD` ne dessine plus que l'alerte « mauvais
@@ -718,6 +721,23 @@ Port configurable via `PORT`.
 ---
 
 ## 18. Historique des changements
+
+### v3.3 — 2026-06-30
+- **DOSA/CHAPPAL en boîte sur Chrome 79 (vrai correctif)** : la détection de glyphe passait par
+  l'alpha (`_canvasHasInk`) → la boîte tofu **opaque** de Chrome 79 le trompait, le PNG ne
+  s'affichait jamais. Remplacé par `_canvasHasColor` (test de **saturation**). *Bug propre à
+  Chrome 79 — invisible sur navigateur récent.*
+- **P2 ne pouvait pas lancer en split-screen** : `updateAIItems` n'excluait pas `isP2`, donc l'IA
+  tirait les objets de P2 automatiquement avant que l'humain n'appuie. Corrigé avec `isHuman(k)`.
+  C'était aussi la cause de l'asymétrie perçue « P1 sans icône / P2 avec icône ». *Bug logique
+  (web + APK).*
+- **Joueur arrivé ne se figeait pas** : `updatePlayer`/`updateAI` font désormais un retour anticipé
+  quand `k.finished` (le kart freine et ignore les commandes) → P1 s'arrête et la course continue
+  jusqu'à ce que P2 finisse. La porte de fin (ligne ~1600) attendait déjà les deux. *Bug logique.*
+- **Icône d'inventaire en split-screen** : vraie icône pixel (`sp1-ic`/`sp2-ic` via `drawPixelIcon`)
+  au lieu d'un simple texte, pour les deux joueurs.
+- Confirmé : l'APK = copie byte-identique de `index.html` (pas de version en retard) ; un bug
+  logique est donc présent sur web ET APK, seuls les bugs de rendu emoji diffèrent (moteur).
 
 ### v3.2 — 2026-06-30
 - **Icônes emoji récents** : remplacement du pixel art dessiné à la main (look trop différent)
