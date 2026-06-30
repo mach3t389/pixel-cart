@@ -1,0 +1,10 @@
+{
+  "name": "punjabi-speed",
+  "version": "1.0.0",
+  "description": "Punjabi Speed — jeu de kart HTML5 (un seul fichier, zéro dépendance runtime)",
+  "private": true,
+  "scripts": {
+    "dev": "node dev-server.js",
+    "start": "node dev-server.js"
+  }
+}

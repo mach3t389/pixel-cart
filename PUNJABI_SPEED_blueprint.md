@@ -1,5 +1,5 @@
 # PUNJABI SPEED — Project Blueprint
-> Document de référence pour Claude Code · v3.0 · Mis à jour 2026-06-29
+> Document de référence pour Claude Code · v3.1 · Mis à jour 2026-06-30
 
 ---
 
@@ -306,6 +306,27 @@ Pipeline :
 
 > **Règle absolue** : tout nouvel item ou icône de menu doit passer par `_buildPixelEmoji` avec `srcPx = Math.max(6, Math.round(sz/3))`. Ne jamais utiliser `fillText` emoji directement sur le canvas de jeu — ça briserait la cohérence pixel art.
 
+#### Pixel art dessiné pour les emoji trop récents (Chrome 79)
+Chrome 79 / l'ancien Android de la radio ne possèdent pas les glyphes des emoji **≥ Emoji 12.0 (2019-2020)** : `fillText` y dessine du **vide** → l'item apparaît comme une case transparente (bug DOSA invisible).
+
+`_buildPixelEmoji` intercepte donc 4 emoji via la table `_ART_EMOJI` et les **dessine à la main en `fillRect`** (fonction `_drawPixelArt`, coords normalisées × `dstPx`, donc valable de 16px à 76px), au lieu du `fillText` vide :
+
+| Emoji | Item / usage | Version | Rendu |
+|---|---|---|---|
+| 🫓 | DOSA | Emoji 13.0 | pixel art « galette dorée » |
+| 🧅 | OIGNON | Emoji 12.0 | pixel art « bulbe violet + pousse » |
+| 🩴 | CHAPPAL | Emoji 12.0 | pixel art « sandale » |
+| 🫑 | difficulté FACILE (`DIFF_ICONS.LEAF`) | Emoji 13.0 | pixel art « poivron vert » |
+
+Comme **tous** les chemins de rendu passent par `_buildPixelEmoji` (sol, projectile en vol, inventaire HUD, notif, tips, boutons menu), ce **point d'interception unique** couvre tout. Audit : ce sont les **seuls** emoji ≥ Emoji 12.0 dessinés sur canvas ; les autres (🌶️ 🍿 🥄 🔥 👤 👥 📊 ⚙ ▶ 🌉) sont assez anciens.
+
+> **Règle** : tout nouvel item avec un emoji récent (≥ 2019) doit ajouter une entrée `_ART_EMOJI` + un cas dans `_drawPixelArt`, sinon il sera invisible sur la radio.
+
+### Notifications d'item (`showNotif`)
+- **Ramassage** : une pop centrale (`#item-notif`, 25 % en split / 50 % en solo ; `#item-notif-p2` à 75 %) indique l'item obtenu.
+- **Usage / lancer** : **aucune** pop (depuis v3.1). Les anciennes pops « CHILI! / KURKURE! / DOSA! / CHAPPAL! » ont été retirées de `useItem` — la pop de ramassage suivie de la pop d'usage se chevauchaient et donnaient l'impression d'une animation jouée deux fois. Le projectile visible et l'icône d'inventaire suffisent comme retour. Le bouclier KURKURE (`#star-fx`) et tous les sons sont conservés.
+- **Touché** : `💥 TOUCHÉ!` reste (événement reçu, distinct du lancer).
+
 ### Comportement KURKURE (remplace l'étoile)
 Kart protégé pendant `starTime > 0` (120 frames ≈ 2s) :
 - Perce à travers les autres karts et les étourdit (`stunKart`)
@@ -370,6 +391,12 @@ score = finished ? (1e9 - finishTime) : (laps + u) * 1000
 - Chargé via `<audio id="menu-music">`
 - Pause automatique quand l'onglet/app passe en arrière-plan (`visibilitychange`)
 - Reprend à la mise au premier plan
+- **Démarrage automatique (v3.1)** : `_tryAutoMusic()` tente `m.play()` **au chargement**.
+  Si la politique autoplay du navigateur le bloque, on réessaie au **1er geste OU à la 1re touche**
+  (`pointerdown` + `keydown`, auto-retirés au succès). Sur l'**APK**, le vrai levier est la
+  préférence Cordova **`MediaPlaybackRequiresUserAction=false`** (config.xml) qui autorise
+  l'autoplay du WebView → la musique démarre sans aucune interaction. *(Un onglet Chrome 79 nu
+  exigera toujours un 1er geste — limite de la politique navigateur, pas du code.)*
 
 ### Effets sonores procéduraux (Web Audio API)
 - Moteur : oscillateur sawtooth, fréquence proportionnelle à la vitesse
@@ -442,8 +469,8 @@ Tactile    : Joystick analogique (gauche) + cluster A/B/USE (droite)
 | Action | Manette NES / générique | Manette Xbox |
 |---|---|---|
 | Direction | D-pad ← → (`btn 14/15`) ou `axes[0]` | Stick gauche `axes[0]` |
-| Accélérer | **A** = `btn(1)` | **RT** (`axes`/`btn 7`) |
-| Freiner / reculer | **B** = `btn(0)` | **LT** (`axes`/`btn 6`) |
+| Accélérer | **A** = `btn(accelBtn)` | **RT** (`axes[7]>0` / `btn 7`) |
+| Freiner / reculer | **B** = `btn(brakeBtn)` | **LT** (`axes[6]>0` / `btn 6`) |
 | Utiliser item | **X** = `btn(3)` | **X** = `btn(3)` |
 | Lancer derrière | ↓ (D-pad bas) + X | ↓ + X |
 | Pause | Start (`btn 8/9`) | Start |
@@ -452,6 +479,18 @@ Tactile    : Joystick analogique (gauche) + cluster A/B/USE (droite)
 > pour ne pas déclencher de son en tournant. La réf. est dans **Paramètres** : trois cartes
 > côte à côte ⌨ CLAVIER · 🎮 MANETTE NES · 🎮 MANETTE XBOX (la carte NES affiche le nom de
 > la manette branchée via `updateGamepadUI`).
+
+#### Réglage « inverser ACCÉL / FREIN » (`swapAB`, persistant)
+Le mapping standard W3C suppose **A = `btn(1)`, B = `btn(0)`**, mais beaucoup de manettes
+NES/HID ont les index **opposés** → accélérer/freiner inversés. Réglage dans **Paramètres → ACCÉL/FREIN : NORMAL / INVERSÉ** :
+- `swapAB=false` (défaut) → `accelBtn=1, brakeBtn=0`
+- `swapAB=true` → `accelBtn=0, brakeBtn=1`
+- Persistant via `localStorage['swapAB']`. Honoré aussi par la nav menu (`_gpMenuState` : OK/Retour suivent `swapAB`).
+
+> **Gâchettes — piège résolu (v3.1)** : `_buildGP` ne lit plus les axes via `(axe+1)/2`.
+> Un stick au repos (valeur 0) y était lu comme un **demi-frein permanent** → le kart reculait
+> tout seul (« en multi, ça ne fait que reculer »). On ne garde que `g.axes[6]>0`/`g.axes[7]>0`
+> (gâchettes au repos à 0) et les boutons `LT/RT`.
 
 ### Double manette (split-screen)
 `INPUT.update()` scanne `navigator.getGamepads()` : la 1re manette → J1 (`gamepad`),
@@ -631,11 +670,31 @@ build-apk\platforms\android\app\build\outputs\apk\debug\app-debug.apk   (~5.2 Mo
 Copier ce fichier sur la clé USB → installer sur la radio (autoriser « sources inconnues »).
 Comme l'`id` ne change pas, réinstaller **met à jour** le jeu en conservant l'app.
 
+### Préférences `config.xml` (rappel)
+- `Fullscreen=true`, `Orientation=landscape`, `AndroidHardwareAccelerated=true`
+- **`MediaPlaybackRequiresUserAction=false`** → autorise l'autoplay audio du WebView (musique
+  au démarrage). **Prend effet uniquement après un rebuild** de l'APK.
+
 ### Notes
-- `build-apk/` est **git-ignored** (node_modules, platforms, APK ne vont pas sur GitHub).
+- `build-apk/platforms`, `node_modules`, l'APK : **git-ignored** (`config.xml` lui est suivi).
 - Pour un *vrai* numéro de version d'update, bumper `version` + `android-versionCode` dans
   `build-apk/config.xml` (sinon réinstall directe sur le même versionCode = OK quand même).
 - `cordova prepare android` (sans build) suffit pour juste re-synchroniser `www/` → projet natif.
+
+---
+
+## 16ter. Développement local (`npm run dev`)
+
+Serveur statique **zéro dépendance** (`dev-server.js` + `package.json`) pour tester dans un
+navigateur, plus proche du réel que `file://` (autoplay et service worker fonctionnent) :
+
+```bash
+npm run dev          # → http://localhost:8080/   (aucun npm install requis)
+```
+
+`dev-server.js` (Node natif, `http`+`fs`) sert la racine, décode les URL (les SFX ont des
+espaces/parenthèses) et mappe les MIME (`.mp3`→audio/mpeg, `.m4a`→audio/mp4, etc.).
+Port configurable via `PORT`.
 
 ---
 
@@ -653,6 +712,23 @@ Comme l'`id` ne change pas, réinstaller **met à jour** le jeu en conservant l'
 ---
 
 ## 18. Historique des changements
+
+### v3.1 — 2026-06-30
+- **Pixel art pour emoji trop récents (Chrome 79)** : 🫓🧅🩴🫑 (Emoji 12-13, invisibles sur la
+  radio) dessinés à la main via `_ART_EMOJI`/`_drawPixelArt`, interceptés dans `_buildPixelEmoji`
+  (couvre tous les chemins de rendu). Corrige la « DOSA invisible ».
+- **Manette** : retrait de l'heuristique d'axe `(axe+1)/2` (un stick au repos était lu comme
+  demi-frein → recul automatique en multi) ; **réglage `swapAB`** NORMAL/INVERSÉ (persistant,
+  menu inclus) pour les manettes dont A/B sont aux index opposés.
+- **Musique** : autoplay au chargement + retry geste/touche, et préférence Cordova
+  `MediaPlaybackRequiresUserAction=false` (config.xml).
+- **Notifications** : retrait des pops d'**usage/lancer** (gardé : ramassage + TOUCHÉ) — la
+  double pop ramassage→lancer donnait l'impression d'une animation jouée deux fois.
+- **Écran titre** : boutons en scaling proportionnel (`vmin`/`min()`, `flex:1 1 0` + `min-width:0`)
+  pour ne plus se chevaucher sur petit écran.
+- **Lancer** : Ctrl ne déclenche plus J1 en solo (J2 uniquement en split).
+- **Dev** : serveur local zéro dépendance `npm run dev` (§16ter).
+- **i18n** : clés `set_pedals`, `ab_normal`, `ab_swap` (FR/EN/PA/HI).
 
 ### v3.0 — 2026-06-29
 - **Split-screen 2 joueurs** : double manette (J1/J2), HUD DOM J1/J2, notifs J1/J2,
