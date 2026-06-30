@@ -1663,13 +1663,11 @@ function useItem(k, backward){
     k.boostTime=200;
     AUDIO.beep(1400,.06,.18,k.x,k.y);setTimeout(()=>AUDIO.beep(1600,.06,.16,k.x,k.y),60);setTimeout(()=>AUDIO.beep(1900,.12,.18,k.x,k.y),130);
     if(isHuman(k))SFX.play('boost',.9);
-    if(k.isPlayer||k.isP2)showNotif("🌶️ CHILI!",700,'CHILI',k.isP2);
     return;
   }
   if(type==='KURKURE'){
     k.starTime=120;
-    if(k.isPlayer){showNotif("🍿 KURKURE!",900,'KURKURE',false);document.getElementById('star-fx').classList.add('active');}
-    else if(k.isP2)showNotif("🍿 KURKURE!",900,'KURKURE',true);
+    if(k.isPlayer)document.getElementById('star-fx').classList.add('active');
     const angles=[-0.45,-0.22,0,0.22,0.45];
     const throwAngle=k.angle+(backward?Math.PI:0);
     const px=k.x+Math.cos(throwAngle)*20, py=k.y+Math.sin(throwAngle)*20;
@@ -1685,7 +1683,6 @@ function useItem(k, backward){
     game.droppedItems.push({x:bx,y:by,type:'DOSA',life:900,ownerId:k.char.id});
     AUDIO.beep(380,.14,.12,k.x,k.y);setTimeout(()=>AUDIO.beep(280,.10,.10,k.x,k.y),80);
     if(isHuman(k))SFX.play('drop_all',.85);
-    if(k.isPlayer||k.isP2)showNotif("🫓 DOSA!",600,'DOSA',k.isP2);
     return;
   }
   // Projectiles : avant par défaut, arrière si ↓+X
@@ -1696,8 +1693,6 @@ function useItem(k, backward){
   else if(type==='CUILLERE'){AUDIO.beep(740,.1,.14,k.x,k.y);}
   else{AUDIO.beep(500,.08,.13,k.x,k.y);}
   if(isHuman(k)&&Math.random()<0.65)SFX.playChar('throw',k.char.id,'throw_voice',.75,150);
-  const label=type==='CHAPPAL'?"🩴 CHAPPAL!":type==='CUILLERE'?"🥄 CUILLÈRE!":"🧅 OIGNON!";
-  if(k.isPlayer||k.isP2)showNotif((backward?'↩ ':'')+label,600,type,k.isP2);
 }
 
 // Mise à jour des projectiles
