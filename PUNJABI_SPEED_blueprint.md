@@ -1,5 +1,5 @@
 # PUNJABI SPEED — Project Blueprint
-> Document de référence pour Claude Code · v3.3 · Mis à jour 2026-06-30
+> Document de référence pour Claude Code · v3.4 · Mis à jour 2026-06-30
 
 ---
 
@@ -92,8 +92,11 @@ Le jeu fonctionne aussi sur téléphone, **en paysage**.
   Les téléphones ~20:9 montrent des **bandes latérales** (pillarbox) — comportement normal.
 - **Verrouillage paysage** : `screen.orientation.lock('landscape')` tenté au chargement
   (ignoré silencieusement si non supporté — fréquent hors PWA/plein écran).
-- **Invite de rotation** : `#rotate-prompt` (overlay plein écran animé 📱) s'affiche en portrait,
-  masqué en paysage via `@media (orientation:landscape)` + toggle JS sur `resize`/`orientationchange`.
+- **Auto-rotation en portrait (v3.4)** : on n'affiche **plus** l'invite « tournez l'écran »
+  (`#rotate-prompt` est masqué). À la place, `@media (orientation:portrait)` pivote `#stage` de
+  90° (`transform:translate(-50%,-50%) rotate(90deg)`, dimensionné `100vh × 100vw`) → le jeu
+  s'affiche en paysage et remplit l'écran même téléphone tenu droit. Le paysage reste
+  `transform:none`. Ne concerne que les navigateurs mobiles (l'APK est verrouillé paysage).
 - **Boutons tactiles height-aware** : taille via `--tbtn:clamp(52px,18vmin,92px)` (vmin → tient
   compte de la hauteur ; ~68px sur téléphone paysage, 92px sur la radio). Police dérivée de `--tbtn`.
 - **Encoche / safe-area** : `viewport-fit=cover` + `env(safe-area-inset-*)` sur `#stage`, les
@@ -406,7 +409,11 @@ score = finished ? (1e9 - finishTime) : (laps + u) * 1000
   exigera toujours un 1er geste — limite de la politique navigateur, pas du code.)*
 
 ### Effets sonores procéduraux (Web Audio API)
-- Moteur : oscillateur sawtooth, fréquence proportionnelle à la vitesse
+- Moteur : oscillateur sawtooth, fréquence proportionnelle à la vitesse. **Moteur unique** : en
+  split-screen, `AUDIO.update` est nourri par le kart au **plus haut régime** (ratio vitesse/max
+  de P1 vs P2) → on l'entend dès qu'un des deux conduit, jamais doublé (v3.4).
+- **Pas de son au ramassage d'objet** (retiré v3.4) — feedback visuel uniquement. Restent : lancer
+  (`throw_all`/beeps) et toucher (`stun_all`/`hit_all`).
 - SFX : `AUDIO.beep(freq, dur, vol, x, y)` avec atténuation par distance :
   ```js
   dmul = 1 / (1 + (d/160)²)   // coupé si dmul < 0.04
@@ -518,6 +525,11 @@ Chaque écran retourne une liste de « lignes » via `menuRows()` :
 - `type:'btn'` → ←→ change de bouton, A active
 
 `menuNav(action)` dispatche `up/down/left/right/ok/back` ; `renderMenuFocus()` applique les classes `.nav-focus` / `.nav-btn-focus`. Clavier, manette (front détecté par `_navPrev`) et tactile partagent ce modèle.
+
+> **Toute nouvelle rangée d'un écran doit être ajoutée à `menuRows()`**, sinon la manette la saute.
+> Bug corrigé v3.4 : les paires de boutons **Type de sons** (`set-sfx-recorded`/`set-sfx-synth`) et
+> **Accél/Frein** (`set-ab-normal`/`set-ab-swap`) manquaient dans le `case STATE.SETTINGS` → la
+> manette sautait des sliders au bouton RETOUR. Désormais 5 rangées navigables.
 
 > **Indicateur de focus conditionnel** : `renderMenuFocus()` n'ajoute aucune surbrillance si `!INPUT._gpConnected`. Sans manette branchée, aucun contour blanc n'apparaît — l'utilisateur tactile/souris ne voit pas de sélection « fantôme ». Le contour réapparaît dès qu'une manette est connectée.
 
@@ -721,6 +733,17 @@ Port configurable via `PORT`.
 ---
 
 ## 18. Historique des changements
+
+### v3.4 — 2026-06-30
+- **Moteur en split-screen** : le moteur unique suit le kart au plus haut régime (P1 vs P2) →
+  audible dès qu'un des deux conduit, jamais doublé.
+- **Nav manette dans Paramètres** : ajout des rangées Type de sons + Accél/Frein dans `menuRows`
+  (la manette les sautait → allait droit à RETOUR). 5 rangées navigables.
+- **Écran final multi** : les **deux** humains sont mis en évidence (`.me`) avec un badge
+  **[P1]** (bleu) / **[P2]** (rose) ; badges affichés seulement en split-screen.
+- **Moins de sons** : son au **ramassage** d'objet retiré (bip + voix). Lancer et toucher restent.
+- **Mobile portrait** : auto-rotation du jeu en paysage au lieu de l'invite « tournez l'écran »
+  (voir §1ter).
 
 ### v3.3 — 2026-06-30
 - **DOSA/CHAPPAL en boîte sur Chrome 79 (vrai correctif)** : la détection de glyphe passait par
