@@ -102,7 +102,8 @@ body.sp-active #hud{display:none!important;}
 .sp-lap{color:#F4D03F;}
 .sp-time{color:#9fd0ff;margin-left:auto;}
 .sp-pos{color:#fff;margin-left:10px;}
-.sp-item{color:#ddd;background:rgba(255,255,255,.12);border-radius:5px;padding:1px 6px;}
+.sp-item{color:#ddd;background:rgba(255,255,255,.12);border-radius:5px;padding:1px 4px;display:inline-flex;align-items:center;}
+.sp-ic{width:1.5em;height:1.5em;image-rendering:pixelated;image-rendering:crisp-edges;vertical-align:middle;}
 
 #bridge-hud{position:absolute;top:44px;left:50%;transform:translateX(-50%);display:none;background:rgba(120,140,180,.85);color:#fff;font-size:clamp(10px,2vw,14px);font-weight:bold;letter-spacing:2px;padding:3px 12px;border-radius:20px;z-index:8;pointer-events:none;}
 #bridge-hud.active{display:block;}
@@ -430,10 +431,10 @@ input[type=range].pk-slider::-moz-range-thumb{width:20px;height:20px;border-radi
     <div class="seg" id="h-pos" style="flex:0 0 70px">1st</div>
   </div>
   <div id="sp-hud1" class="sp-hud">
-    <span class="sp-tag">J1</span><span class="sp-name" id="sp1-name"></span><span class="sp-lap" id="sp1-lap"></span><span class="sp-item" id="sp1-item" style="display:none"></span><span class="sp-time" id="sp1-time"></span><span class="sp-pos" id="sp1-pos"></span>
+    <span class="sp-tag">J1</span><span class="sp-name" id="sp1-name"></span><span class="sp-lap" id="sp1-lap"></span><span class="sp-item" id="sp1-item" style="display:none"><canvas class="sp-ic" id="sp1-ic" width="32" height="32"></canvas></span><span class="sp-time" id="sp1-time"></span><span class="sp-pos" id="sp1-pos"></span>
   </div>
   <div id="sp-hud2" class="sp-hud">
-    <span class="sp-tag">J2</span><span class="sp-name" id="sp2-name"></span><span class="sp-lap" id="sp2-lap"></span><span class="sp-item" id="sp2-item" style="display:none"></span><span class="sp-time" id="sp2-time"></span><span class="sp-pos" id="sp2-pos"></span>
+    <span class="sp-tag">J2</span><span class="sp-name" id="sp2-name"></span><span class="sp-lap" id="sp2-lap"></span><span class="sp-item" id="sp2-item" style="display:none"><canvas class="sp-ic" id="sp2-ic" width="32" height="32"></canvas></span><span class="sp-time" id="sp2-time"></span><span class="sp-pos" id="sp2-pos"></span>
   </div>
   <div id="bridge-hud">🌉 <span data-i18n="bridge">PONT</span></div>
   <div id="item-notif"></div>
@@ -782,7 +783,18 @@ const _emojiCache={};
 const _BAKED_NAMES={'🫓':'dosa','🧅':'onion','🩴':'sandal','🫑':'pepper'};
 const _BAKED_IMG={};
 for(var _be in _BAKED_NAMES){var _bi=new Image();_bi.src='icons/'+_BAKED_NAMES[_be]+'.png';_BAKED_IMG[_be]=_bi;}
-function _canvasHasInk(c2d,sz){var d=c2d.getImageData(0,0,sz,sz).data;for(var i=3;i<d.length;i+=4){if(d[i]>10)return true;}return false;}
+// Vrai emoji couleur = pixels saturés. Une "boîte tofu" (.notdef de Chrome 79) est OPAQUE
+// mais GRISE → un test d'alpha la prend pour un glyphe valide. On teste donc la SATURATION.
+function _canvasHasColor(c2d,sz){
+  var d=c2d.getImageData(0,0,sz,sz).data;
+  for(var i=0;i<d.length;i+=4){
+    if(d[i+3]<32)continue; // ignore le quasi-transparent
+    var r=d[i],g=d[i+1],b=d[i+2];
+    var mx=r>g?(r>b?r:b):(g>b?g:b), mn=r<g?(r<b?r:b):(g<b?g:b);
+    if(mx-mn>40)return true; // pixel coloré → vrai emoji
+  }
+  return false;
+}
 function _buildPixelEmoji(emoji,srcPx,dstPx){
   const key=emoji+'_'+srcPx+'_'+dstPx;
   if(_emojiCache[key])return _emojiCache[key];
@@ -793,7 +805,7 @@ function _buildPixelEmoji(emoji,srcPx,dstPx){
   tc.fillText(emoji,srcPx/2,srcPx/2+srcPx*.04);
   // 2. Glyphe absent (case vide, ex. Chrome 79) → image PNG de secours
   const baked=_BAKED_IMG[emoji];
-  if(baked&&!_canvasHasInk(tc,srcPx)){
+  if(baked&&!_canvasHasColor(tc,srcPx)){
     if(!(baked.complete&&baked.naturalWidth>0)){var o2=document.createElement('canvas');o2.width=dstPx;o2.height=dstPx;return o2;}
     tc.clearRect(0,0,srcPx,srcPx);tc.drawImage(baked,0,0,srcPx,srcPx);
   }
@@ -1524,6 +1536,11 @@ function drawShadow(cx,baseY,scale){ctx.fillStyle="rgba(0,0,0,0.28)";ctx.beginPa
 function isOnTrack(dist){return dist<=currentTrack.trackWidth/2;}
 
 function updatePlayer(k,dt){
+  if(k.finished){ // course terminée pour ce joueur : il s'arrête, ignore les commandes (on attend l'autre)
+    k.speed=Math.max(0,k.speed-0.30*dt);
+    k.x+=Math.cos(k.angle)*k.speed*dt*.5;k.y+=Math.sin(k.angle)*k.speed*dt*.5;
+    k.onTrack=isOnTrack(k.dist);return;
+  }
   if(k.stunTime>0){
     // Décrémenter aussi starTime/boostTime pendant le stun pour ne pas les figer
     if(k.boostTime>0)k.boostTime-=dt;
@@ -1782,7 +1799,7 @@ function stunKart(k,type){
 // IA utilise son item après un court délai
 function updateAIItems(){
   for(const k of game.karts){
-    if(k.isPlayer||!k.item||k.stunTime>0)continue;
+    if(isHuman(k)||!k.item||k.stunTime>0)continue; // isHuman = P1 OU P2 : ne jamais auto-tirer pour un humain
     if(!k._itemDelay){const d=DIFFS[difficulty];k._itemDelay=d.itemMin+Math.random()*(d.itemMax-d.itemMin);}
     k._itemDelay-=1;
     if(k._itemDelay<=0){k._itemDelay=0;useItem(k);}
@@ -1797,6 +1814,7 @@ function getRubberBand(ai){
 }
 function updateAI(ai,dt){
   const pts=CENTER.pts,N=pts.length,st=ai.char.stats,prof=ai.char.aiProfile;
+  if(ai.finished){ai.speed=Math.max(0,ai.speed-0.30*dt);ai.x+=Math.cos(ai.angle)*ai.speed*dt*.5;ai.y+=Math.sin(ai.angle)*ai.speed*dt*.5;ai.onTrack=isOnTrack(ai.dist);return;}
   if(ai.stunTime>0){ai.stunTime-=dt;if(ai.stunTime<=0){ai.angle=tangentAt(ai.index);ai.speed=0;}else{ai.angle+=0.18*dt;ai.speed=Math.max(0,ai.speed-.28*dt);ai.x+=Math.cos(ai.angle)*ai.speed*dt*.5;ai.y+=Math.sin(ai.angle)*ai.speed*dt*.5;}ai.onTrack=isOnTrack(ai.dist);return;}
   if(ai.boostTime>0)ai.boostTime-=dt;
   if(ai.starTime>0)ai.starTime-=dt;
@@ -1889,7 +1907,7 @@ function _spHudKart(k,nameEl,lapEl,itemEl,posEl,timeEl){
   posEl.textContent=ordinal(computePlace(k));
   if(timeEl)timeEl.textContent=formatTime(game.raceTime);
   const itm=k.item||(k.starTime>0?'KURKURE':null)||(k.boostTime>0?'CHILI':null);
-  if(itm){itemEl.style.display='inline-block';itemEl.textContent=ITEM_INFO[itm].label;}
+  if(itm){itemEl.style.display='inline-flex';var _ic=itemEl.firstChild;if(_ic&&_ic.getContext)drawPixelIcon(_ic,itm);}
   else{itemEl.style.display='none';}
 }
 function drawHUD(){
