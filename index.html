@@ -1641,8 +1641,7 @@ function checkPickups(){
         box.active=false;
         box.respawnIn=ITEM_RESPAWN;
         k.item=pickRandom(ITEM_LIST);
-        AUDIO.beep(880,.08,.14,k.x,k.y);
-        if(isHuman(k))SFX.play('laugh',.6);
+        // Pas de son au ramassage (réduction du bruit) — feedback visuel uniquement
         if(k.isPlayer||k.isP2)showNotif(" "+ITEM_INFO[k.item].label,600,k.item,k.isP2);
       }
     }
@@ -2043,6 +2042,8 @@ function menuRows(){
     return [
       {type:'sel', el:mr?mr.closest('.settings-row'):null, dec:()=>sliderStep('set-music-vol',-5), inc:()=>sliderStep('set-music-vol',5)},
       {type:'sel', el:sr?sr.closest('.settings-row'):null, dec:()=>sliderStep('set-sfx-vol',-5), inc:()=>sliderStep('set-sfx-vol',5)},
+      {type:'btn', btns:[byId('set-sfx-recorded'),byId('set-sfx-synth')]},
+      {type:'btn', btns:[byId('set-ab-normal'),byId('set-ab-swap')]},
       {type:'btn', btns:[byId('settings-back')]},
     ];
   }
@@ -2286,7 +2287,9 @@ function showResult(){
       const progress=(k.laps+k.u)/currentTrack.totalLaps;
       timeStr=progress>0.05?'~'+formatTime(game.raceTime/progress):'—';
     }
-    html+=`<div class="${k.isPlayer?'me':''}">${ordinal(i+1)} &nbsp; ${k.char.name} &nbsp; ${timeStr}</div>`;
+    var _human=k.isPlayer||k.isP2;
+    var _badge=game.splitScreen?(k.isPlayer?'<b style="color:#5DADE2">[P1]</b> ':(k.isP2?'<b style="color:#F1948A">[P2]</b> ':'')):'';
+    html+=`<div class="${_human?'me':''}">${_badge}${ordinal(i+1)} &nbsp; ${k.char.name} &nbsp; ${timeStr}</div>`;
   });
   document.getElementById('r-board').innerHTML=html;
   recordRaceStats(place);
@@ -2577,7 +2580,15 @@ function loop(t){
     for(const k of game.karts){if(!k.isPlayer&&!k.isP2){updateAI(k,dt);updateProgress(k);}}
     resolveKartCollisions();
     checkPickups();updateItemBoxes(dt);updateProjectiles(dt);updateDroppedItems(dt);updateAIItems();
-    AUDIO.update(game.player.speed,game.player.char.stats.topSpeed,game.player.onTrack,game.player.speed>.3);
+    // Moteur unique : en split-screen, suit le kart au plus haut régime (ratio vitesse/max) →
+    // on entend le moteur dès qu'un des deux conduit, sans le doubler.
+    var _ek=game.player;
+    if(game.splitScreen&&game.p2){
+      var _r1=game.player.char.stats.topSpeed>0?game.player.speed/game.player.char.stats.topSpeed:0;
+      var _r2=game.p2.char.stats.topSpeed>0?game.p2.speed/game.p2.char.stats.topSpeed:0;
+      if(_r2>_r1)_ek=game.p2;
+    }
+    AUDIO.update(_ek.speed,_ek.char.stats.topSpeed,_ek.onTrack,_ek.speed>.3);
     if(!game.splitScreen){
       const _ww=isGoingWrongWay(game.player);
       wrongWayEl.classList.toggle('active',_ww);
